@@ -1,0 +1,3 @@
+[
+  {"method": "GET", "path": "/documents/{id}", "authenticated": true, "tenant_isolation": true}
+]

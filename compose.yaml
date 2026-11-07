@@ -1,0 +1,20 @@
+services:
+  sentinel:
+    build: .
+    ports:
+      - "127.0.0.1:${SENTINEL_PORT:-8765}:8765"
+    environment:
+      SENTINEL_ADMIN_TOKEN: ${SENTINEL_ADMIN_TOKEN:?Run sentinel init and keep .env private}
+      SENTINEL_DB: /data/sentinel.sqlite
+    volumes:
+      - sentinel-data:/data
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+volumes:
+  sentinel-data:
