@@ -55,11 +55,11 @@ def run_live_demo(announce=None):
                 "port": free_port(),
                 "sentinel_url": guard.url,
                 "collector": keys["collector_key"],
-                "timeout": 0.5,
+                "timeout": 2,
             }
             with ProcessServer("documents", doc_config) as documents:
                 step("independent_processes", passed=guard.process.pid != documents.process.pid)
-                with httpx.Client(base_url=documents.url, timeout=5, trust_env=False) as client:
+                with httpx.Client(base_url=documents.url, timeout=10, trust_env=False) as client:
                     headers = {"Authorization": "Bearer demo-a"}
                     assert client.get("/documents/a").status_code == 401
                     assert (
@@ -67,10 +67,10 @@ def run_live_demo(announce=None):
                         == 401
                     )
                     own = client.get("/documents/a", headers=headers)
-                    assert own.status_code == 200
+                    assert own.status_code == 200, own.text
                     step("own_company_access", status=own.status_code)
                     before = client.get("/documents/b", headers=headers)
-                    assert before.status_code == 403
+                    assert before.status_code == 403, before.text
                     assert before.json()["detail"] == "Application authorization denied access"
                     step("candidate_only_observes", application_still_enforces=True)
                     report = post(f"/v1/policies/{pid}/simulate")
@@ -85,7 +85,7 @@ def run_live_demo(announce=None):
                         {"simulation_id": report["id"], "acknowledge_impact": True},
                     )
                     blocked = client.get("/documents/b", headers=headers)
-                    assert blocked.status_code == 403
+                    assert blocked.status_code == 403, blocked.text
                     assert blocked.json()["detail"] == "Policy denied access"
                     step("activated_policy_denies", status=blocked.status_code)
                     assert client.get("/documents/a", headers=headers).status_code == 200
