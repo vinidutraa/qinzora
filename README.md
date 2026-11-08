@@ -1,12 +1,4 @@
-<p align="center">
-  <img src="docs/assets/qinzora-banner.jpg" alt="Banner Qinzora" width="100%">
-</p>
-
-<p align="center">
-  <img src="docs/assets/qinzora-logo.jpg" alt="Logo Qinzora" width="180">
-</p>
-
-<h1 align="center">Qinzora</h1>
+# Qinzora
 
 [![Python checks](https://github.com/vinidutraa/qinzora/actions/workflows/ci.yml/badge.svg)](https://github.com/vinidutraa/qinzora/actions/workflows/ci.yml)
 
