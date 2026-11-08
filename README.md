@@ -1,8 +1,16 @@
-# API Sentinel
+<p align="center">
+  <img src="docs/assets/qinzora-banner.jpg" alt="Banner Qinzora" width="100%">
+</p>
 
-[![Python checks](https://github.com/vinidutraa/api-sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/vinidutraa/api-sentinel/actions/workflows/ci.yml)
+<p align="center">
+  <img src="docs/assets/qinzora-logo.jpg" alt="Logo Qinzora" width="180">
+</p>
 
-API Sentinel é um serviço back-end em Python para avaliação de políticas de acesso e comportamento de APIs. A aplicação recebe eventos estruturados, identifica violações, registra evidências e calcula o impacto histórico de uma política antes de sua ativação.
+<h1 align="center">Qinzora</h1>
+
+[![Python checks](https://github.com/vinidutraa/qinzora/actions/workflows/ci.yml/badge.svg)](https://github.com/vinidutraa/qinzora/actions/workflows/ci.yml)
+
+Qinzora é um serviço back-end em Python para avaliação de políticas de acesso e comportamento de APIs. A aplicação recebe eventos estruturados, identifica violações, registra evidências e calcula o impacto histórico de uma política antes de sua ativação.
 
 O serviço disponibiliza uma API HTTP/JSON, um cliente Python e comandos de terminal. Pode ser executado como processo independente ou por Docker Compose. A licença MIT permite utilização, modificação e integração em outros projetos, observadas as condições de atribuição.
 
@@ -25,11 +33,11 @@ A demonstração básica não exige Docker, Ollama ou conexão com uma aplicaç�
 
 ## Download
 
-O código pode ser obtido em **Code → Download ZIP**, por clonagem Git ou na [página de versões](https://github.com/vinidutraa/api-sentinel/releases).
+O código pode ser obtido em **Code → Download ZIP**, por clonagem Git ou na [página de versões](https://github.com/vinidutraa/qinzora/releases).
 
 ```text
-git clone https://github.com/vinidutraa/api-sentinel.git
-cd api-sentinel
+git clone https://github.com/vinidutraa/qinzora.git
+cd qinzora
 ```
 
 Se o código foi obtido por ZIP, extraia o arquivo e abra um terminal na pasta que contém `pyproject.toml`.
@@ -182,7 +190,7 @@ python -m ruff format --check src tests examples scripts
 python scripts/http_smoke.py
 ```
 
-A CI executa testes em Windows e Linux com Python 3.12 e 3.14, além do teste Docker em Linux. Os resultados atuais podem ser consultados em [GitHub Actions](https://github.com/vinidutraa/api-sentinel/actions).
+A CI executa testes em Windows e Linux com Python 3.12 e 3.14, além do teste Docker em Linux. Os resultados atuais podem ser consultados em [GitHub Actions](https://github.com/vinidutraa/qinzora/actions).
 
 O comando `sentinel check examples/baseline.json examples/regression.json` retorna código 1 porque o segundo manifesto remove intencionalmente uma proteção. Comparar `baseline.json` consigo mesmo retorna código 0. O verificador compara controles declarados; não inspeciona toda a lógica de autorização da aplicação.
 
