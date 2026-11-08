@@ -19,7 +19,7 @@ jobs:
       - run: python -m ruff check src tests examples scripts
       - run: python -m ruff format --check src tests examples scripts
       - run: python -m pytest -q
-      - run: sentinel demo
+      - run: qinzora demo
       - run: python scripts/http_smoke.py
       - run: python -m pip_audit --disable-pip -r requirements-lock.txt
   docker:

@@ -46,8 +46,14 @@ def simulate(policy: Policy, rows: list[dict]) -> dict:
     affected_ids = []
     labels = {"legitimate": 0, "abusive": 0, "unknown": 0}
     totals = dict(labels)
+    previous_timestamp = None
     for row in rows:
         event, timestamp = row["event"], row["at"]
+        if timestamp.utcoffset() is None:
+            raise ValueError("Replay requires timezone-aware timestamps")
+        if previous_timestamp is not None and timestamp < previous_timestamp:
+            raise ValueError("Replay timestamps must follow ingestion order")
+        previous_timestamp = timestamp
         if not matches(policy, event):
             continue
         totals[event.expected] += 1

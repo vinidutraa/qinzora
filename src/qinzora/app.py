@@ -4,7 +4,6 @@ import secrets
 import sqlite3
 import time
 from contextlib import asynccontextmanager
-from datetime import datetime, timedelta
 from typing import Annotated
 from uuid import uuid4
 
@@ -14,6 +13,7 @@ from fastapi.responses import JSONResponse
 
 from . import __version__
 from .engine import regressions
+from .errors import ApplicationError, require
 from .explain import explain
 from .models import (
     Activation,
@@ -22,9 +22,18 @@ from .models import (
     RegressionRequest,
     TenantCreate,
     TenantUpdate,
-    now,
 )
-from .service import digest, policies, record, require, run_simulation
+from .repository import SQLiteRepository
+from .service import (
+    activate_policy,
+    digest,
+    record,
+    revoke_policy,
+    run_simulation,
+)
+from .service import (
+    create_policy as create_policy_command,
+)
 from .store import Store
 
 
@@ -56,19 +65,29 @@ class BodyLimit:
 
 
 def create_app(db_path: str | None = None, admin_token: str | None = None):
-    token = admin_token or os.environ.get("SENTINEL_ADMIN_TOKEN", "")
+    token = admin_token or os.environ.get("QINZORA_ADMIN_TOKEN", "")
     if len(token) < 32:
-        raise ValueError("SENTINEL_ADMIN_TOKEN must contain at least 32 characters")
-    store = Store(db_path or os.environ.get("SENTINEL_DB", "data/sentinel.sqlite"))
+        raise ValueError("QINZORA_ADMIN_TOKEN must contain at least 32 characters")
+    store = Store(db_path or os.environ.get("QINZORA_DB", "data/qinzora.sqlite"))
 
     @asynccontextmanager
     async def lifespan(app):
         store.initialize()
         yield
 
-    app = FastAPI(title="API Sentinel", version=__version__, lifespan=lifespan)
+    app = FastAPI(title="Qinzora", version=__version__, lifespan=lifespan)
     app.add_middleware(BodyLimit)
     app.state.store = store
+
+    @app.exception_handler(ApplicationError)
+    async def application_error(request, exc: ApplicationError):
+        statuses = {
+            "not_found": 404,
+            "conflict": 409,
+            "capacity_exceeded": 429,
+            "replay_too_large": 413,
+        }
+        return JSONResponse({"detail": exc.message}, statuses[exc.code])
 
     @app.exception_handler(RequestValidationError)
     async def validation_error(request, exc):
@@ -170,74 +189,37 @@ def create_app(db_path: str | None = None, admin_token: str | None = None):
     @app.post("/v1/policies", status_code=201)
     def create_policy(body: Policy, identity: Manager):
         with store.transaction() as db:
-            if len(policies(db, identity["tenant"])) >= 100:
-                raise HTTPException(409, "Maximum of 100 policies per account")
-            item = {"policy": body.model_dump(), "state": "candidate", "expires_at": None}
-            policy_id = Store.put(db, identity["tenant"], "policy", item)
-            Store.audit(db, identity["tenant"], "policy.created", {"policy_id": policy_id})
-        return {"id": policy_id, **item}
+            return create_policy_command(SQLiteRepository(db, identity["tenant"]), body)
 
     @app.get("/v1/policies")
     def list_policies(identity: Manager):
         with store.transaction() as db:
-            return policies(db, identity["tenant"])
+            return SQLiteRepository(db, identity["tenant"]).policies()
 
     @app.post("/v1/events", status_code=201)
     def ingest(body: Event, identity: Account):
         with store.transaction() as db:
-            return record(db, identity["tenant"], body, enforce=False)
+            return record(SQLiteRepository(db, identity["tenant"]), body, enforce=False)
 
     @app.post("/v1/decisions")
     def decision(body: Event, identity: Account):
         with store.transaction() as db:
-            return record(db, identity["tenant"], body, enforce=True)
+            return record(SQLiteRepository(db, identity["tenant"]), body, enforce=True)
 
     @app.post("/v1/policies/{policy_id}/simulate")
     def replay_policy(policy_id: str, identity: Manager):
         with store.transaction() as db:
-            return run_simulation(db, identity["tenant"], policy_id)
+            return run_simulation(SQLiteRepository(db, identity["tenant"]), policy_id)
 
     @app.post("/v1/policies/{policy_id}/activate")
     def activate(policy_id: str, body: Activation, identity: Manager):
-        tenant = identity["tenant"]
         with store.transaction() as db:
-            item = require(Store.get(db, tenant, "policy", policy_id))
-            report = require(Store.get(db, tenant, "simulation", body.simulation_id))
-            policy = Policy.model_validate(item["policy"])
-            if item["state"] != "candidate":
-                raise HTTPException(409, "Only candidate policies can be activated")
-            if report["policy_id"] != policy_id or report["policy_digest"] != digest(
-                policy.model_dump_json()
-            ):
-                raise HTTPException(409, "Simulation does not match policy")
-            if now() - datetime.fromisoformat(report["created_at"]) > timedelta(minutes=15):
-                raise HTTPException(409, "Simulation expired; run again")
-            if not report["activation_eligible"]:
-                raise HTTPException(409, "No matching evidence or observation-only policy")
-            if not body.acknowledge_impact:
-                raise HTTPException(409, "Review simulation and acknowledge its impact")
-            item.update(
-                state="active",
-                expires_at=(now() + timedelta(seconds=policy.ttl_seconds)).isoformat(),
-                simulation_id=body.simulation_id,
-            )
-            Store.put(db, tenant, "policy", item, policy_id)
-            Store.audit(
-                db,
-                tenant,
-                "policy.activated",
-                {"policy_id": policy_id, "simulation_id": body.simulation_id},
-            )
-            return {"id": policy_id, **item}
+            return activate_policy(SQLiteRepository(db, identity["tenant"]), policy_id, body)
 
     @app.post("/v1/policies/{policy_id}/revoke")
     def revoke(policy_id: str, identity: Manager):
         with store.transaction() as db:
-            item = require(Store.get(db, identity["tenant"], "policy", policy_id))
-            item["state"] = "revoked"
-            Store.put(db, identity["tenant"], "policy", item, policy_id)
-            Store.audit(db, identity["tenant"], "policy.revoked", {"policy_id": policy_id})
-            return {"id": policy_id, **item}
+            return revoke_policy(SQLiteRepository(db, identity["tenant"]), policy_id)
 
     @app.get("/v1/incidents")
     def incidents(
@@ -258,7 +240,7 @@ def create_app(db_path: str | None = None, admin_token: str | None = None):
         with store.transaction() as db:
             incident = require(Store.get(db, identity["tenant"], "incident", incident_id))
         return explain(
-            incident, os.environ.get("SENTINEL_OLLAMA_URL"), os.environ.get("SENTINEL_OLLAMA_MODEL")
+            incident, os.environ.get("QINZORA_OLLAMA_URL"), os.environ.get("QINZORA_OLLAMA_MODEL")
         )
 
     @app.get("/v1/simulations/{simulation_id}")

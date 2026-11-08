@@ -1,13 +1,13 @@
 services:
-  sentinel:
+  qinzora:
     build: .
     ports:
-      - "127.0.0.1:${SENTINEL_PORT:-8765}:8765"
+      - "127.0.0.1:${QINZORA_PORT:-8765}:8765"
     environment:
-      SENTINEL_ADMIN_TOKEN: ${SENTINEL_ADMIN_TOKEN:?Run sentinel init and keep .env private}
-      SENTINEL_DB: /data/sentinel.sqlite
+      QINZORA_ADMIN_TOKEN: ${QINZORA_ADMIN_TOKEN:?Run qinzora init and keep .env private}
+      QINZORA_DB: /data/qinzora.sqlite
     volumes:
-      - sentinel-data:/data
+      - qinzora-data:/data
     restart: unless-stopped
     read_only: true
     tmpfs:
@@ -17,4 +17,4 @@ services:
     security_opt:
       - no-new-privileges:true
 volumes:
-  sentinel-data:
+  qinzora-data:

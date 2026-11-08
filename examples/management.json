@@ -1,0 +1,26 @@
+{
+  "database": "data/qinzora.sqlite",
+  "account_id": "REPLACE_WITH_ACCOUNT_ID",
+  "provider": "ollama",
+  "base_url": "http://127.0.0.1:11434",
+  "model": "REPLACE_WITH_INSTALLED_MODEL",
+  "authority": {
+    "routes": [
+      {
+        "service": "documents",
+        "route": "/documents/{id}"
+      }
+    ],
+    "allow_stage": true,
+    "allow_enforce": false,
+    "maximum_ttl_seconds": 300,
+    "minimum_rate_limit": 10,
+    "maximum_window_seconds": 60,
+    "minimum_legitimate_samples": 1,
+    "minimum_abusive_affected": 1,
+    "maximum_unknown_affected": 0,
+    "maximum_false_positive_rate": 0,
+    "plan_ttl_seconds": 300,
+    "objective": "Maintain tenant isolation and appropriate request limits on the managed documents route."
+  }
+}

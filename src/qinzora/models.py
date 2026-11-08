@@ -37,7 +37,9 @@ class Policy(Model):
 
     @model_validator(mode="after")
     def valid_route(self):
-        if self.route != "*" and (not self.route.startswith("/") or "?" in self.route):
+        if self.route != "*" and (
+            not self.route.startswith("/") or "?" in self.route or "#" in self.route
+        ):
             raise ValueError("route must be '*' or a path template without query strings")
         return self
 

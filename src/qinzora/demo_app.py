@@ -6,7 +6,7 @@ from typing import Annotated
 
 from fastapi import FastAPI, Header, HTTPException
 
-from .client import SentinelClient, SentinelUnavailable
+from .client import QinzoraClient, QinzoraUnavailable
 from .models import Event
 
 USERS = {
@@ -19,12 +19,12 @@ DOCUMENTS = {
 }
 
 
-def create_documents_app(sentinel_url=None, collector_key=None, timeout=2):
+def create_documents_app(qinzora_url=None, collector_key=None, timeout=2):
     @asynccontextmanager
     async def lifespan(app):
-        with SentinelClient(
-            sentinel_url or os.environ["SENTINEL_URL"],
-            collector_key or os.environ["SENTINEL_COLLECTOR_KEY"],
+        with QinzoraClient(
+            qinzora_url or os.environ["QINZORA_URL"],
+            collector_key or os.environ["QINZORA_COLLECTOR_KEY"],
             timeout=timeout,
         ) as guard:
             app.state.guard = guard
@@ -56,7 +56,7 @@ def create_documents_app(sentinel_url=None, collector_key=None, timeout=2):
                     resource_tenant=resource["tenant"],
                 )
             )
-        except SentinelUnavailable as exc:
+        except QinzoraUnavailable as exc:
             raise HTTPException(503, "Policy service unavailable") from exc
         if not decision["allowed"]:
             raise HTTPException(403, "Policy denied access")

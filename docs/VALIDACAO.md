@@ -12,9 +12,9 @@ Também são verificadas respostas inválidas do serviço, códigos HTTP de erro
 
 ## Integração em processos independentes
 
-`sentinel demo --live` inicia o serviço e a aplicação de documentos em processos separados. O teste verifica decisões por HTTP, ativação, revogação, limites de tentativas, indisponibilidade e recuperação com o banco preservado.
+`qinzora demo --live` inicia o serviço e a aplicação de documentos em processos separados. O teste verifica decisões por HTTP, ativação, revogação, limites de tentativas, indisponibilidade e recuperação com o banco preservado.
 
-O critério de sucesso é um relatório com `passed: true`. A aplicação integrada deve responder 503 e não retornar o documento quando o serviço de políticas estiver indisponível. Sua autorização própria deve continuar impedindo acesso entre organizações após a revogação da política do Sentinel.
+O critério de sucesso é um relatório com `passed: true`. A aplicação integrada deve responder 503 e não retornar o documento quando o serviço de políticas estiver indisponível. Sua autorização própria deve continuar impedindo acesso entre organizações após a revogação da política do Qinzora.
 
 `python scripts/http_smoke.py` verifica o serviço diretamente por HTTP em loopback, incluindo provisionamento, observação, simulação, ativação e negação. Os processos e bancos temporários são encerrados ao final.
 
@@ -46,7 +46,7 @@ Esse procedimento verifica integração, não qualidade ou correção factual de
 
 ## Integração contínua
 
-O workflow `.github/workflows/ci.yml` executa a suíte em Windows e Linux com Python 3.12 e 3.14, verificações de formatação e dependências, além de um job Docker em Linux. Consulte a [execução correspondente ao commit](https://github.com/vinidutraa/api-sentinel/actions) antes de afirmar que uma versão foi aprovada.
+O workflow `.github/workflows/ci.yml` executa a suíte em Windows e Linux com Python 3.12 e 3.14, verificações de formatação e dependências, além de um job Docker em Linux. Consulte a [execução correspondente ao commit](https://github.com/vinidutraa/qinzora/actions) antes de afirmar que uma versão foi aprovada.
 
 ## Escopo dos resultados
 

@@ -3,7 +3,7 @@ import secrets
 import pytest
 from fastapi.testclient import TestClient
 
-from api_sentinel.app import create_app
+from qinzora.app import create_app
 
 
 @pytest.fixture

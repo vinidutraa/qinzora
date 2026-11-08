@@ -12,23 +12,23 @@ from pathlib import Path
 
 import httpx
 
-from api_sentinel.engine import simulate
-from api_sentinel.lab import ProcessServer
-from api_sentinel.live_demo import free_port
-from api_sentinel.models import Event, Policy, now
+from qinzora.engine import simulate
+from qinzora.lab import ProcessServer
+from qinzora.live_demo import free_port
+from qinzora.models import Event, Policy, now
 
 
 def run_benchmark(requests=400, concurrency=8):
     if not 1 <= requests <= 450 or not 1 <= concurrency <= 16:
         raise ValueError("Use 1–450 requests and 1–16 workers; API limit stays enabled")
-    with tempfile.TemporaryDirectory(prefix="sentinel-load-") as directory:
+    with tempfile.TemporaryDirectory(prefix="qinzora-load-") as directory:
         config = {
             "db": str(Path(directory) / "load.sqlite"),
             "admin": secrets.token_urlsafe(32),
             "port": free_port(),
         }
         with (
-            ProcessServer("sentinel", config) as server,
+            ProcessServer("qinzora", config) as server,
             httpx.Client(
                 base_url=server.url,
                 timeout=20,

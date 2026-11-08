@@ -1,5 +1,6 @@
 """Real loopback HTTP, temporary storage and graceful shutdown."""
 
+import asyncio
 import json
 import secrets
 import socket
@@ -11,11 +12,13 @@ from pathlib import Path
 import httpx
 import uvicorn
 
-from api_sentinel.app import create_app
+from qinzora.app import create_app
+from qinzora.client import AsyncQinzoraClient
+from qinzora.models import Event
 
 
 def main():
-    with tempfile.TemporaryDirectory(prefix="sentinel-http-") as directory:
+    with tempfile.TemporaryDirectory(prefix="qinzora-http-") as directory:
         token = secrets.token_urlsafe(32)
         app = create_app(str(Path(directory) / "smoke.sqlite"), token)
         with socket.socket() as sock:
@@ -77,6 +80,18 @@ def main():
                     )
                     blocked.raise_for_status()
                     assert not blocked.json()["allowed"]
+
+                    async def check_async_client():
+                        async with AsyncQinzoraClient(
+                            f"http://127.0.0.1:{port}", keys["collector_key"]
+                        ) as sdk:
+                            attempt = Event(**{**event, "event_id": "tcp-async"})
+                            first = await sdk.decide(attempt)
+                            retry = await sdk.decide(attempt)
+                            assert not first["allowed"] and not retry["allowed"]
+                            assert retry["duplicate"]
+
+                    asyncio.run(check_async_client())
                     assert client.get("/openapi.json").status_code == 200
                     print(
                         json.dumps(
@@ -92,6 +107,7 @@ def main():
                                     "activate",
                                     "deny",
                                     "OpenAPI",
+                                    "async_sdk_denial_and_idempotency",
                                 ],
                             }
                         )

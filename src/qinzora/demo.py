@@ -10,7 +10,7 @@ from .app import create_app
 
 
 def run_demo():
-    with tempfile.TemporaryDirectory(prefix="sentinel-demo-") as directory:
+    with tempfile.TemporaryDirectory(prefix="qinzora-demo-") as directory:
         admin = secrets.token_urlsafe(32)
         app = create_app(str(Path(directory) / "demo.sqlite"), admin)
         with TestClient(app) as client:

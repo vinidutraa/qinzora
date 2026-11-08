@@ -8,3 +8,7 @@ __pycache__
 tests
 docs
 *.sqlite*
+
+.artifacts
+.tools
+dist

@@ -25,13 +25,13 @@ def run_live_demo(announce=None):
         if announce:
             announce(name, detail)
 
-    with tempfile.TemporaryDirectory(prefix="sentinel-integration-") as directory:
+    with tempfile.TemporaryDirectory(prefix="qinzora-integration-") as directory:
         config = {
             "db": str(Path(directory) / "demo.sqlite"),
             "admin": secrets.token_urlsafe(32),
             "port": free_port(),
         }
-        guard = ProcessServer("sentinel", config)
+        guard = ProcessServer("qinzora", config)
         with guard, httpx.Client(base_url=guard.url, timeout=10, trust_env=False) as control:
             response = control.post(
                 "/v1/admin/tenants",
@@ -53,7 +53,7 @@ def run_live_demo(announce=None):
             )["id"]
             doc_config = {
                 "port": free_port(),
-                "sentinel_url": guard.url,
+                "qinzora_url": guard.url,
                 "collector": keys["collector_key"],
                 "timeout": 2,
             }
@@ -129,7 +129,7 @@ def run_live_demo(announce=None):
                         elapsed_ms=round(elapsed, 2),
                         data_disclosed=False,
                     )
-                    with ProcessServer("sentinel", config):
+                    with ProcessServer("qinzora", config):
                         recovered = client.get("/documents/a", headers=headers)
                         assert recovered.status_code == 200
                         step("restart_and_recovery", status=200, database_preserved=True)

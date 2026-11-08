@@ -8,18 +8,18 @@ O serviço disponibiliza uma API HTTP/JSON, um cliente Python e comandos de term
 
 ## Finalidade
 
-Uma aplicação integrada pode utilizar o Sentinel para observar tentativas de acesso, verificar limites de requisições e aplicar políticas de isolamento entre organizações. As regras são declaradas explicitamente e avaliadas por código determinístico.
+Uma aplicação integrada pode utilizar o Qinzora para observar tentativas de acesso, verificar limites de requisições e aplicar políticas de isolamento entre organizações. As regras são declaradas explicitamente e avaliadas por código determinístico.
 
-A simulação permite examinar quais eventos previamente registrados seriam afetados por uma política. A ativação exige a identificação de uma simulação correspondente e a confirmação explícita do impacto pelo operador. Políticas ativas possuem prazo de validade e podem ser revogadas.
+A simulação permite examinar quais eventos previamente registrados seriam afetados por uma política. A ativação exige uma simulação correspondente e a confirmação do impacto pelo operador ou pelo executor de administração, dentro de permissões previamente configuradas. Políticas ativas possuem prazo de validade e podem ser revogadas.
 
-O Sentinel não intercepta tráfego automaticamente. A aplicação integrada precisa fornecer os eventos e executar a decisão retornada pelo serviço. Sua autenticação e autorização próprias devem permanecer implementadas.
+O Qinzora não intercepta tráfego automaticamente. A aplicação integrada precisa fornecer os eventos e executar a decisão retornada pelo serviço. Sua autenticação e autorização próprias devem permanecer implementadas.
 
 ## Requisitos
 
 - Python 3.12 ou superior.
 - Acesso à internet durante a instalação das dependências.
 - Docker Engine e Compose somente para a execução por contêiner.
-- Ollama e um modelo compatível somente para explicações opcionais por modelo de linguagem.
+- Um endpoint/modelo compatível somente para os recursos opcionais de IA: explicações e administração de políticas.
 
 A demonstração básica não exige Docker, Ollama ou conexão com uma aplicação existente. Os testes de integração usam serviços locais e dados fictícios.
 
@@ -44,7 +44,7 @@ No PowerShell, a partir da pasta do projeto:
 python -m venv .venv
 .venv\Scripts\python.exe -m pip install --require-hashes -r requirements-lock.txt
 .venv\Scripts\python.exe -m pip install --no-deps .
-.venv\Scripts\sentinel.exe demo --present
+.venv\Scripts\qinzora.exe demo --present
 ```
 
 Não é necessário ativar o ambiente virtual. Os caminhos explícitos evitam depender da configuração de execução de scripts do PowerShell.
@@ -55,14 +55,14 @@ Não é necessário ativar o ambiente virtual. Os caminhos explícitos evitam de
 python3 -m venv .venv
 .venv/bin/python -m pip install --require-hashes -r requirements-lock.txt
 .venv/bin/python -m pip install --no-deps .
-.venv/bin/sentinel demo --present
+.venv/bin/qinzora demo --present
 ```
 
-Os comandos seguintes utilizam `sentinel` e `python` como abreviações dos executáveis do ambiente virtual. No Windows, correspondem a `.venv\Scripts\sentinel.exe` e `.venv\Scripts\python.exe`. No Linux e macOS, correspondem a `.venv/bin/sentinel` e `.venv/bin/python`.
+Os comandos seguintes utilizam `qinzora` e `python` como abreviações dos executáveis do ambiente virtual. No Windows, correspondem a `.venv\Scripts\qinzora.exe` e `.venv\Scripts\python.exe`. No Linux e macOS, correspondem a `.venv/bin/qinzora` e `.venv/bin/python`.
 
 ## Verificação funcional
 
-O comando `sentinel demo --present` executa a integração em dois processos independentes: o serviço Sentinel e uma API fictícia de documentos. As etapas e seus resultados são apresentados no terminal.
+O comando `qinzora demo --present` executa a integração em dois processos independentes: o serviço Qinzora e uma API fictícia de documentos. As etapas e seus resultados são apresentados no terminal.
 
 O cenário verifica:
 
@@ -73,7 +73,7 @@ O cenário verifica:
 5. Ativação explícita e aplicação da decisão de negação na API integrada.
 6. Revogação da política, preservando a autorização própria da aplicação.
 7. Aplicação de limite de tentativas por identidade e rota.
-8. Resposta HTTP 503, sem documento, quando o Sentinel fica indisponível.
+8. Resposta HTTP 503, sem documento, quando o Qinzora fica indisponível.
 9. Recuperação após reinício, preservando o banco de dados do cenário.
 
 As etapas concluídas aparecem com `[OK]`. Ao final, o relatório JSON contém `"passed": true`. O comando encerra os processos criados e utiliza armazenamento temporário. Não exige criar `.env` nem provisionar credenciais manualmente.
@@ -82,9 +82,9 @@ Outros modos disponíveis:
 
 | Comando | Comportamento |
 | --- | --- |
-| `sentinel demo` | Executa o cenário sintético pela API interna de testes e retorna JSON. |
-| `sentinel demo --live` | Executa os dois processos e retorna o relatório de integração em JSON. |
-| `sentinel demo --present` | Executa a integração e exibe cada etapa antes do relatório final. |
+| `qinzora demo` | Executa o cenário sintético pela API interna de testes e retorna JSON. |
+| `qinzora demo --live` | Executa os dois processos e retorna o relatório de integração em JSON. |
+| `qinzora demo --present` | Executa a integração e exibe cada etapa antes do relatório final. |
 
 Os dados são fictícios. Um cenário concluído comprova o comportamento verificado, não uma garantia de eficácia para qualquer aplicação ou carga.
 
@@ -93,15 +93,15 @@ Os dados são fictícios. Um cenário concluído comprova o comportamento verifi
 Para utilizar uma instância persistente:
 
 ```text
-sentinel init
-sentinel serve
+qinzora init
+qinzora serve
 ```
 
 `init` cria `.env` com um token administrativo aleatório e o caminho do banco. O arquivo não é sobrescrito se já existir. Mantenha-o privado e fora do controle de versão.
 
-Por padrão, o serviço atende em `http://127.0.0.1:8765` e utiliza `data/sentinel.sqlite`. A documentação automática da API fica em `/docs`, o contrato OpenAPI em `/openapi.json` e a verificação de disponibilidade em `/healthz`.
+Por padrão, o serviço atende em `http://127.0.0.1:8765` e utiliza `data/qinzora.sqlite`. A documentação automática da API fica em `/docs`, o contrato OpenAPI em `/openapi.json` e a verificação de disponibilidade em `/healthz`.
 
-Para alterar o endereço ou a porta, utilize `sentinel serve --host ENDERECO --port PORTA`. A exposição fora da máquina local exige infraestrutura apropriada, incluindo TLS, controle de acesso e limites de conexão.
+Para alterar o endereço ou a porta, utilize `qinzora serve --host ENDERECO --port PORTA`. A exposição fora da máquina local exige infraestrutura apropriada, incluindo TLS, controle de acesso e limites de conexão.
 
 ## Funcionamento das políticas
 
@@ -115,7 +115,7 @@ Esses valores devem ser derivados de informações verificadas pelo servidor. N�
 
 `POST /v1/events` registra e avalia um evento sem aplicar bloqueio. `POST /v1/decisions` registra a tentativa e retorna `allowed` para que a aplicação integrada decida se continua a operação. Não envie a mesma tentativa aos dois endpoints: isso duplicaria a contagem. A reutilização do mesmo identificador em modos diferentes é rejeitada.
 
-Uma resposta `allowed: true` não substitui a autorização própria da aplicação. Ela indica que nenhuma política de bloqueio ativa do Sentinel negou aquela tentativa.
+Uma resposta `allowed: true` não substitui a autorização própria da aplicação. Ela indica que nenhuma política de bloqueio ativa do Qinzora negou aquela tentativa.
 
 ### Simulação e ativação
 
@@ -134,7 +134,7 @@ A ativação exige uma simulação da mesma política, realizada há menos de 15
 
 ## Integração com outras aplicações
 
-O cliente `SentinelClient` pode ser utilizado em aplicações Python sem obrigar o uso de FastAPI. A aplicação de exemplo usa FastAPI. Outras linguagens podem consumir o contrato HTTP/JSON mediante integração própria.
+O cliente `QinzoraClient` pode ser utilizado em aplicações Python sem obrigar o uso de FastAPI. A aplicação de exemplo usa FastAPI. Outras linguagens podem consumir o contrato HTTP/JSON mediante integração própria.
 
 O fluxo de configuração é:
 
@@ -147,17 +147,23 @@ O fluxo de configuração é:
 
 O [guia de integração](docs/INTEGRACAO.md) apresenta o uso do SDK. O [guia de operação](docs/OPERACAO.md) descreve provisionamento, políticas, rotação de chaves, exportação e retenção. A implementação de referência está em [examples/documents_api.py](examples/documents_api.py).
 
+## Administração opcional por IA
+
+`qinzora manage --config ARQUIVO.json` solicita ao modelo escolhido um plano de administração de políticas. O operador pode revisar o plano ou habilitar sua execução dentro de permissões configuradas. Ativação exige replay com critérios de impacto; planos têm validade, isolamento por conta e execução transacional/idempotente.
+
+Consulte [Administração por IA](docs/ADMINISTRACAO.md) para configuração, operações suportadas, integração com outros frameworks e limites. O comando administra políticas do Qinzora; não modifica automaticamente qualquer aplicação ou infraestrutura. O exemplo de configuração está em `examples/management.json`. `qinzora watch --config ARQUIVO.json --execute` acompanha mudanças continuamente, com checkpoint persistido, lease por conta e espera progressiva para falhas do modelo.
+
 ## Explicações opcionais por IA
 
 As decisões são determinísticas. A integração opcional com Ollama produz apenas um comentário sobre as evidências e não pode ativar políticas ou autorizar operações.
 
-Configure `SENTINEL_OLLAMA_URL` e `SENTINEL_OLLAMA_MODEL` no ambiente ou em `.env`. O endpoint `POST /v1/incidents/{id}/explain` envia somente categorias conhecidas, significados fixos e contagens.
+Configure `QINZORA_OLLAMA_URL` e `QINZORA_OLLAMA_MODEL` no ambiente ou em `.env`. O endpoint `POST /v1/incidents/{id}/explain` envia somente categorias conhecidas, significados fixos e contagens.
 
 A resposta mantém a explicação canônica em `explanation`. O comentário do modelo, quando disponível, aparece separadamente em `model_explanation`. Em caso de falha, a explicação determinística permanece disponível. O timeout de inferência é de 60 segundos, com timeout de conexão de 2 segundos. O texto do modelo pode conter interpretações incorretas e deve ser tratado como consultivo.
 
 ## Docker Compose
 
-Com Docker Engine e Compose disponíveis, gere a configuração com `sentinel init` e execute:
+Com Docker Engine e Compose disponíveis, gere a configuração com `qinzora init` e execute:
 
 ```text
 docker compose up --build -d
@@ -165,7 +171,7 @@ docker compose ps
 docker compose down
 ```
 
-O volume `sentinel-data` preserva o banco. O contêiner utiliza usuário sem privilégios de root e filesystem somente leitura, com diretórios de escrita específicos. A publicação padrão é restrita ao loopback. A variável `SENTINEL_PORT` altera a porta externa.
+O volume `qinzora-data` preserva o banco. O contêiner utiliza usuário sem privilégios de root e filesystem somente leitura, com diretórios de escrita específicos. A publicação padrão é restrita ao loopback. A variável `QINZORA_PORT` altera a porta externa.
 
 O script `python scripts/docker_smoke.py` verifica a imagem, o fluxo de políticas e a persistência após reinício. Ele cria um projeto Compose exclusivo e remove somente os recursos criados por esse teste.
 
@@ -184,7 +190,7 @@ python scripts/http_smoke.py
 
 A CI executa testes em Windows e Linux com Python 3.12 e 3.14, além do teste Docker em Linux. Os resultados atuais podem ser consultados em [GitHub Actions](https://github.com/vinidutraa/qinzora/actions).
 
-O comando `sentinel check examples/baseline.json examples/regression.json` retorna código 1 porque o segundo manifesto remove intencionalmente uma proteção. Comparar `baseline.json` consigo mesmo retorna código 0. O verificador compara controles declarados; não inspeciona toda a lógica de autorização da aplicação.
+O comando `qinzora check examples/baseline.json examples/regression.json` retorna código 1 porque o segundo manifesto remove intencionalmente uma proteção. Comparar `baseline.json` consigo mesmo retorna código 0. O verificador compara controles declarados; não inspeciona toda a lógica de autorização da aplicação.
 
 Os scripts `scripts/benchmark.py` e `scripts/ollama_smoke.py` permitem reproduzir verificações de carga local e inferência real, respectivamente. Seus resultados dependem do ambiente de execução. Consulte [VALIDACAO.md](docs/VALIDACAO.md) para os procedimentos e critérios.
 
@@ -194,7 +200,7 @@ O armazenamento atual utiliza SQLite e transações serializadas. O desenho aten
 
 O limite da API de controle é de 600 requisições por minuto por chave de cliente. Há limite de 1 MiB para corpos e de 100 políticas por conta. A capacidade de eventos é um limite técnico configurável. A auditoria local não é inviolável.
 
-O SDK é síncrono. Integrações que exigem coleta assíncrona, filas, processamento distribuído ou maior volume precisam implementar e validar esses componentes. O serviço não substitui autenticação, autorização, proteção de borda ou o controle de propriedade dos dados da aplicação integrada.
+O SDK oferece `QinzoraClient` e `AsyncQinzoraClient`. Integrações que exigem filas duráveis, processamento distribuído ou maior volume precisam implementar e validar esses componentes. O serviço não substitui autenticação, autorização, proteção de borda ou o controle de propriedade dos dados da aplicação integrada.
 
 ## Documentação
 

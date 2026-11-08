@@ -5,8 +5,8 @@ import pytest
 from conftest import auth
 from test_api import activate, policy, post_event, simulation
 
-from api_sentinel.engine import evaluate, simulate
-from api_sentinel.models import Event, Policy, now
+from qinzora.engine import evaluate, simulate
+from qinzora.models import Event, Policy, now
 
 
 @pytest.mark.parametrize("kind", ["rate_limit", "error_burst", "tenant_isolation", "latency"])

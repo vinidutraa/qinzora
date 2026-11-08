@@ -3,10 +3,10 @@ import json
 import httpx
 import pytest
 
-from api_sentinel.client import SentinelClient, SentinelUnavailable
-from api_sentinel.live_demo import run_live_demo
-from api_sentinel.models import Event
-from api_sentinel.store import Store
+from qinzora.client import QinzoraClient, QinzoraUnavailable
+from qinzora.live_demo import run_live_demo
+from qinzora.models import Event
+from qinzora.store import Store
 
 
 def test_two_independent_processes_and_failure_recovery():
@@ -28,8 +28,8 @@ def test_sdk_rejects_malformed_decisions(monkeypatch, payload):
         )
 
     monkeypatch.setattr(httpx.Client, "post", respond)
-    with SentinelClient("http://localhost", "fake") as client:
-        with pytest.raises(SentinelUnavailable):
+    with QinzoraClient("http://localhost", "fake") as client:
+        with pytest.raises(QinzoraUnavailable):
             client.decide(Event(service="test", route="/test", subject="a"))
 
 
@@ -43,8 +43,8 @@ def test_sdk_never_allows_on_remote_errors(monkeypatch, status):
         )
 
     monkeypatch.setattr(httpx.Client, "post", respond)
-    with SentinelClient("http://localhost", "fake") as client:
-        with pytest.raises(SentinelUnavailable):
+    with QinzoraClient("http://localhost", "fake") as client:
+        with pytest.raises(QinzoraUnavailable):
             client.decide(Event(service="test", route="/test", subject="a"))
 
 
@@ -53,8 +53,8 @@ def test_sdk_times_out_without_implicit_allow(monkeypatch):
         raise httpx.ReadTimeout("slow service")
 
     monkeypatch.setattr(httpx.Client, "post", respond)
-    with SentinelClient("http://localhost", "fake", timeout=0.1) as client:
-        with pytest.raises(SentinelUnavailable):
+    with QinzoraClient("http://localhost", "fake", timeout=0.1) as client:
+        with pytest.raises(QinzoraUnavailable):
             client.decide(Event(service="test", route="/test", subject="a"))
 
 

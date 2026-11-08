@@ -8,13 +8,13 @@ import uuid
 
 import httpx
 
-from api_sentinel.live_demo import free_port
+from qinzora.live_demo import free_port
 
 
 def main():
     port, token = free_port(), secrets.token_urlsafe(32)
-    project = "sentinel-test-" + uuid.uuid4().hex[:12]
-    env = {**os.environ, "SENTINEL_ADMIN_TOKEN": token, "SENTINEL_PORT": str(port)}
+    project = "qinzora-test-" + uuid.uuid4().hex[:12]
+    env = {**os.environ, "QINZORA_ADMIN_TOKEN": token, "QINZORA_PORT": str(port)}
     command = ["docker", "compose", "-p", project, "-f", "compose.yaml"]
 
     def compose(*args):
@@ -67,7 +67,7 @@ def main():
             )
             result.raise_for_status()
             assert not result.json()["allowed"]
-            compose("restart", "sentinel")
+            compose("restart", "qinzora")
             compose("up", "--wait", "--wait-timeout", "120")
             # Restart can close pooled sockets; use a fresh client connection.
         with httpx.Client(

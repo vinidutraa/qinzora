@@ -9,7 +9,7 @@ import uvicorn
 
 
 def _worker(kind, config, ready, stop):
-    if kind == "sentinel":
+    if kind == "qinzora":
         from .app import create_app
 
         app = create_app(config["db"], config["admin"])
@@ -17,7 +17,7 @@ def _worker(kind, config, ready, stop):
         from .demo_app import create_documents_app
 
         app = create_documents_app(
-            config["sentinel_url"], config["collector"], timeout=config.get("timeout", 2)
+            config["qinzora_url"], config["collector"], timeout=config.get("timeout", 2)
         )
     server = uvicorn.Server(
         uvicorn.Config(
@@ -39,6 +39,8 @@ def _worker(kind, config, ready, stop):
 
 class ProcessServer:
     def __init__(self, kind, config):
+        if kind not in ("qinzora", "documents"):
+            raise ValueError("Unknown demonstration server kind")
         self.config = config
         self.url = f"http://127.0.0.1:{config['port']}"
         ctx = multiprocessing.get_context("spawn")
@@ -46,17 +48,24 @@ class ProcessServer:
         self.process = ctx.Process(target=_worker, args=(kind, config, self.ready, self.stop))
 
     def __enter__(self):
-        self.process.start()
-        deadline = time.monotonic() + 20
-        while time.monotonic() < deadline:
-            if not self.process.is_alive():
-                raise RuntimeError(f"Demo server exited: {self.process.exitcode}")
-            if self.ready.wait(0.05):
-                with httpx.Client(trust_env=False, timeout=3) as client:
-                    client.get(self.url + "/healthz").raise_for_status()
-                return self
-        self.close()
-        raise RuntimeError("Demo readiness timeout")
+        try:
+            self.process.start()
+            deadline = time.monotonic() + 20
+            while time.monotonic() < deadline:
+                if not self.process.is_alive():
+                    raise RuntimeError(f"Demo server exited: {self.process.exitcode}")
+                if self.ready.wait(0.05):
+                    with httpx.Client(trust_env=False, timeout=3) as client:
+                        client.get(self.url + "/healthz").raise_for_status()
+                    return self
+            raise RuntimeError("Demo readiness timeout")
+        except BaseException as failure:
+            # __exit__ is never called when __enter__ fails.
+            try:
+                self.close()
+            except Exception as cleanup_error:
+                failure.add_note(f"Demo cleanup also failed: {cleanup_error}")
+            raise
 
     def close(self):
         if self.process.pid is None:

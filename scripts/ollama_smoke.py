@@ -10,16 +10,16 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from api_sentinel.app import create_app
+from qinzora.app import create_app
 
 
 def run_smoke(url, model):
     previous = {
-        name: os.environ.get(name) for name in ("SENTINEL_OLLAMA_URL", "SENTINEL_OLLAMA_MODEL")
+        name: os.environ.get(name) for name in ("QINZORA_OLLAMA_URL", "QINZORA_OLLAMA_MODEL")
     }
     try:
-        os.environ.update(SENTINEL_OLLAMA_URL=url, SENTINEL_OLLAMA_MODEL=model)
-        with tempfile.TemporaryDirectory(prefix="sentinel-model-") as directory:
+        os.environ.update(QINZORA_OLLAMA_URL=url, QINZORA_OLLAMA_MODEL=model)
+        with tempfile.TemporaryDirectory(prefix="qinzora-model-") as directory:
             token = secrets.token_urlsafe(32)
             with TestClient(create_app(str(Path(directory) / "model.sqlite"), token)) as client:
                 tenant = client.post(

@@ -3,11 +3,11 @@ from datetime import timedelta
 import httpx
 import pytest
 
-from api_sentinel.client import SentinelClient, SentinelUnavailable
-from api_sentinel.demo import run_demo
-from api_sentinel.engine import evaluate, regressions, simulate
-from api_sentinel.explain import explain
-from api_sentinel.models import Event, Policy, RouteContract, now
+from qinzora.client import QinzoraClient, QinzoraUnavailable
+from qinzora.demo import run_demo
+from qinzora.engine import evaluate, regressions, simulate
+from qinzora.explain import explain
+from qinzora.models import Event, Policy, RouteContract, now
 
 
 def evt(**kwargs):
@@ -112,8 +112,8 @@ def test_sdk_fails_closed_on_unavailable_or_malformed_response(monkeypatch):
         raise httpx.ConnectError("offline")
 
     monkeypatch.setattr(httpx.Client, "post", fail)
-    with SentinelClient("http://localhost", "fake") as client:
-        with pytest.raises(SentinelUnavailable):
+    with QinzoraClient("http://localhost", "fake") as client:
+        with pytest.raises(QinzoraUnavailable):
             client.decide(evt())
 
 

@@ -5,8 +5,8 @@ from datetime import timedelta
 import pytest
 from conftest import auth
 
-from api_sentinel.models import now
-from api_sentinel.store import Store
+from qinzora.models import now
+from qinzora.store import Store
 
 
 def policy(client, tenant, kind="tenant_isolation", **kwargs):
@@ -42,7 +42,7 @@ def test_auth_health_and_no_default_admin(api):
     assert client.get("/healthz").json()["status"] == "ok"
     assert client.get("/v1/policies").status_code == 401
     assert client.get("/v1/policies", headers=auth("wrong")).status_code == 401
-    from api_sentinel.app import create_app
+    from qinzora.app import create_app
 
     with pytest.raises(ValueError):
         create_app(admin_token="short")
@@ -220,7 +220,7 @@ def test_persistence_across_restart(api, tenant, event):
     post_event(client, tenant, event)
     from fastapi.testclient import TestClient
 
-    from api_sentinel.app import create_app
+    from qinzora.app import create_app
 
     with TestClient(create_app(client.app.state.store.path, token)) as restarted:
         result = restarted.get("/v1/events", headers=auth(tenant["manager_key"])).json()
@@ -231,7 +231,7 @@ def test_control_api_rate_limit(api, tenant):
     client, _ = api
     import time
 
-    from api_sentinel.service import digest
+    from qinzora.service import digest
 
     with client.app.state.store.transaction() as db:
         db.execute(
