@@ -1,17 +1,13 @@
 """Bounded operational summaries; no request bodies, identities or model tools."""
 
-import json
 from collections import Counter
 
+from ..continuity.service import profile_summary
 from ..errors import ApplicationError
 from ..models import Policy, now
 from ..ports import Repository
-from ..service import digest
+from ..serialization import fingerprint
 from .contracts import Authority
-
-
-def fingerprint(value: object) -> str:
-    return digest(json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False))
 
 
 def policy_inventory(repository: Repository, authority: Authority) -> list[dict]:
@@ -25,10 +21,34 @@ def policy_inventory(repository: Repository, authority: Authority) -> list[dict]
     )
 
 
+def continuity_inventory(repository: Repository, authority: Authority) -> list[dict]:
+    profiles = []
+    for profile_id in sorted(set(authority.continuity_profile_ids)):
+        item = profile_summary(
+            repository, profile_id, authority.maximum_continuity_evidence_age_seconds
+        )
+        profile = item["profile"]
+        if not authority.permits_scope(profile["service"], profile["route"]):
+            raise ApplicationError("conflict", "Continuity profile is outside managed scope")
+        profiles.append(item)
+    return profiles
+
+
+def continuity_revision(profiles: list[dict]) -> str:
+    # Live dependency signals may change during inference. Configuration and rehearsals may not.
+    return fingerprint(
+        [
+            {key: value for key, value in item.items() if key != "dependency_health"}
+            for item in profiles
+        ]
+    )
+
+
 def capture_context(repository: Repository, authority: Authority) -> dict:
     if repository.event_count() > 100000:
         raise ApplicationError("replay_too_large", "Administration snapshot exceeds 100000 events")
     inventory = policy_inventory(repository, authority)
+    continuity = continuity_inventory(repository, authority)
     rows = repository.snapshot()
     # One summary per granted scope bounds output independently of observed routes/identities.
     summaries = []
@@ -56,6 +76,8 @@ def capture_context(repository: Repository, authority: Authority) -> dict:
         "watermark": rows[-1]["seq"] if rows else 0,
         "retained_events": len(rows),
         "policies": inventory,
+        "continuity_profiles": continuity,
+        "continuity_revision": continuity_revision(continuity),
         "summaries": summaries,
         "authority": authority.model_dump(),
         "limitations": "Aggregates describe retained attempts, not causal proof. Labels are "

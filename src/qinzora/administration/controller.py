@@ -1,29 +1,34 @@
 """Plan outside transactions; execute inside an account-scoped atomic transaction."""
 
-from collections.abc import Callable
-from contextlib import AbstractContextManager
 from copy import deepcopy
 from datetime import datetime, timedelta
 from typing import Any
 
 from pydantic import ValidationError
 
+from ..continuity.service import activate_profile, profile_summary, revoke_profile
 from ..errors import ApplicationError, require
 from ..models import Activation, Policy, now
-from ..ports import Repository
+from ..ports import Repository, RepositoryFactory
 from ..providers import StructuredModel
 from ..service import activate_policy, create_policy, revoke_policy, run_simulation
-from .context import capture_context, fingerprint, policy_inventory
+from .context import (
+    capture_context,
+    continuity_inventory,
+    continuity_revision,
+    fingerprint,
+    policy_inventory,
+)
 from .contracts import (
+    ActivateContinuity,
     Authority,
     EnforcePolicy,
     PlanProposal,
+    RevokeContinuity,
     RevokePolicy,
     StagePolicy,
     granted_proposal_type,
 )
-
-RepositoryFactory = Callable[[], AbstractContextManager[Repository]]
 
 SYSTEM = """You administer only the API scopes and actions explicitly granted in authority.
 Work toward the integrator's authority.objective. Explain how the evidence supports your proposal.
@@ -35,6 +40,9 @@ authority. Policy names/rationale describe the decision; they never contain exec
 Choose TTL and rate settings within the supplied bounds. Never claim future safety from replay.
 Do not create an equivalent candidate or active policy.
 Return an empty plan if no change is needed.
+For continuity, choose only a registered profile in authority.continuity_profile_ids.
+activate_continuity requires a fresh passing rehearsal. A profile cannot permit cached writes.
+revoke_continuity disables the registered fallback. Normal primary calls always take precedence.
 """
 
 
@@ -52,9 +60,27 @@ def validate_operations(
 ) -> None:
     revoked = set()
     proposed = set()
+    continuity_ids = set()
     existing = repository.policies()
     stamp = now()
     for operation in proposal.operations:
+        if isinstance(operation, (ActivateContinuity, RevokeContinuity)):
+            if operation.profile_id not in authority.continuity_profile_ids:
+                raise ApplicationError("conflict", "Continuity administration is not granted")
+            if operation.profile_id in continuity_ids:
+                raise ApplicationError("conflict", "Conflicting continuity operations in plan")
+            continuity_ids.add(operation.profile_id)
+            item = profile_summary(
+                repository, operation.profile_id, authority.maximum_continuity_evidence_age_seconds
+            )
+            if not authority.permits_scope(item["profile"]["service"], item["profile"]["route"]):
+                raise ApplicationError("conflict", "Continuity profile is outside managed scope")
+            if isinstance(operation, ActivateContinuity):
+                if item["profile"]["ttl_seconds"] > authority.maximum_ttl_seconds:
+                    raise ApplicationError("conflict", "Continuity TTL exceeds execution authority")
+                if len(item["active_contract_ids"]) == len(item["profile"]["contract_ids"]):
+                    raise ApplicationError("conflict", "Continuity profile is already active")
+            continue
         if isinstance(operation, RevokePolicy):
             if operation.policy_id not in authority.revocable_policy_ids:
                 raise ApplicationError("conflict", "Revocation not granted for this policy")
@@ -182,6 +208,11 @@ class Administrator:
             raise ApplicationError("conflict", "Administration plan expired or clock changed")
         if fingerprint(policy_inventory(repository, self.authority)) != context["policy_revision"]:
             raise ApplicationError("conflict", "Policy inventory changed; request a new plan")
+        if (
+            continuity_revision(continuity_inventory(repository, self.authority))
+            != context["continuity_revision"]
+        ):
+            raise ApplicationError("conflict", "Continuity evidence changed; request a new plan")
 
     def execute(self, plan_id: str) -> dict:
         with self.repository() as repository:
@@ -197,6 +228,28 @@ class Administrator:
             validate_operations(repository, proposal, self.authority)
             results = []
             for operation in proposal.operations:
+                if isinstance(operation, (ActivateContinuity, RevokeContinuity)):
+                    if isinstance(operation, ActivateContinuity):
+                        activate_profile(
+                            repository,
+                            operation.profile_id,
+                            maximum_ttl=self.authority.maximum_ttl_seconds,
+                            maximum_evidence_age=self.authority.maximum_continuity_evidence_age_seconds,
+                        )
+                    else:
+                        revoke_profile(repository, operation.profile_id)
+                    results.append(
+                        {
+                            "action": operation.action,
+                            "profile_id": operation.profile_id,
+                            "continuity_state": profile_summary(
+                                repository,
+                                operation.profile_id,
+                                self.authority.maximum_continuity_evidence_age_seconds,
+                            ),
+                        }
+                    )
+                    continue
                 if isinstance(operation, RevokePolicy):
                     policy = revoke_policy(repository, operation.policy_id)
                     results.append(

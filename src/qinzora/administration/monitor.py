@@ -10,7 +10,7 @@ from uuid import NAMESPACE_URL, uuid4, uuid5
 from ..errors import ApplicationError
 from ..models import now
 from ..providers import ModelUnavailable
-from .context import capture_context, fingerprint
+from .context import capture_context, continuity_revision, fingerprint
 from .controller import Administrator
 
 
@@ -101,11 +101,23 @@ class Monitor:
                 observed = deepcopy(context)
                 if plan and plan["state"] == "executed":
                     inventory = {item["id"]: item for item in observed["policies"]}
+                    continuity = {item["id"]: item for item in observed["continuity_profiles"]}
                     for result in plan["results"]:
-                        item = result["policy_state"]
-                        inventory[item["id"]] = item
+                        if "policy_state" in result:
+                            item = result["policy_state"]
+                            inventory[item["id"]] = item
+                        if "continuity_state" in result:
+                            item = deepcopy(result["continuity_state"])
+                            item["dependency_health"] = continuity[item["id"]]["dependency_health"]
+                            continuity[item["id"]] = item
                     observed["policies"] = sorted(inventory.values(), key=lambda item: item["id"])
                     observed["policy_revision"] = fingerprint(observed["policies"])
+                    observed["continuity_profiles"] = sorted(
+                        continuity.values(), key=lambda item: item["id"]
+                    )
+                    observed["continuity_revision"] = continuity_revision(
+                        observed["continuity_profiles"]
+                    )
                 checkpoint["observed_revision"] = observation_revision(observed)
             failures = checkpoint.get("failures", 0) + 1 if retry else 0
             checkpoint.update(

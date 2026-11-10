@@ -1,0 +1,10 @@
+name: Feature proposal
+description: Describe a concrete integration problem.
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem and proposed behavior
+      description: Include integration boundaries, alternatives and constraints. Use synthetic examples.
+    validations:
+      required: true

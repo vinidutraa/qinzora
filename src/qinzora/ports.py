@@ -4,6 +4,8 @@ Implementations must provide an account-scoped snapshot inside one transaction.
 They must serialize concurrent writes to protect quotas, counters and idempotency.
 """
 
+from collections.abc import Callable
+from contextlib import AbstractContextManager
 from datetime import datetime
 from typing import Any, Protocol
 
@@ -22,3 +24,6 @@ class Repository(Protocol):
     def get(self, kind: str, object_id: str) -> dict[str, Any] | None: ...
     def put(self, kind: str, data: dict[str, Any], object_id: str | None = None) -> str: ...
     def audit(self, action: str, detail: dict[str, Any]) -> None: ...
+
+
+RepositoryFactory = Callable[[], AbstractContextManager[Repository]]

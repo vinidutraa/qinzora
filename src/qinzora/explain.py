@@ -6,11 +6,11 @@ from collections import Counter
 import httpx
 
 KNOWN_REASONS = {
-    "missing_tenant_context": "Contexto de empresa ausente na integração.",
-    "cross_tenant_access": "Empresa do usuário difere da empresa do recurso.",
-    "request_rate_exceeded": "Limite de tentativas por identidade e rota excedido.",
-    "high_latency": "Latência observada acima do limite configurado.",
-    "error_burst": "Quantidade de respostas com erro excedeu o limite configurado.",
+    "missing_tenant_context": "Tenant context is missing from the integration.",
+    "cross_tenant_access": "The actor tenant differs from the resource tenant.",
+    "request_rate_exceeded": "The attempt limit for this identity and route was exceeded.",
+    "high_latency": "Observed latency exceeded the configured threshold.",
+    "error_burst": "The error response count exceeded the configured threshold.",
 }
 
 
@@ -40,10 +40,10 @@ def explain(incident: dict, base_url: str | None = None, model: str | None = Non
                     "messages": [
                         {
                             "role": "system",
-                            "content": "Resuma em português as VIOLAÇÕES OBSERVADAS abaixo. "
-                            "São ocorrências detectadas, não opções de configuração. "
-                            "Use apenas os significados e contagens informados. "
-                            "Não invente atores, causas ou resultados. Máximo 60 palavras.",
+                            "content": "Summarize the OBSERVED VIOLATIONS below in English. "
+                            "These are detected occurrences, not configuration options. "
+                            "Use only the supplied meanings and counts. "
+                            "Do not invent actors, causes or outcomes. Maximum 60 words.",
                         },
                         {
                             "role": "user",

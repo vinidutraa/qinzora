@@ -1,169 +1,141 @@
 # Qinzora
 
 [![Python checks](https://github.com/vinidutraa/qinzora/actions/workflows/ci.yml/badge.svg)](https://github.com/vinidutraa/qinzora/actions/workflows/ci.yml)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)](pyproject.toml)
+[![MIT License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-Qinzora é um serviço back-end em Python para avaliação de políticas de acesso e comportamento de APIs. A aplicação recebe eventos estruturados, identifica violações, registra evidências e calcula o impacto histórico de uma política antes de sua ativação.
+**Evaluate API policies, inspect evidence, and simulate historical impact before enforcement.**
 
-O serviço disponibiliza uma API HTTP/JSON, um cliente Python e comandos de terminal. Pode ser executado como processo independente ou por Docker Compose. A licença MIT permite utilização, modificação e integração em outros projetos, observadas as condições de atribuição.
+[Português brasileiro](https://github.com/vinidutraa/qinzora/blob/main/README.pt-BR.md) · [Documentation](https://github.com/vinidutraa/qinzora/blob/main/docs/index.md) · [Releases](https://github.com/vinidutraa/qinzora/releases) · [Contributing](https://github.com/vinidutraa/qinzora/blob/main/CONTRIBUTING.md)
 
-## Finalidade
+Qinzora is an open-source Python service for API security policy evaluation, rate limiting, tenant isolation and incident monitoring. Applications send structured events and enforce the decisions it returns. Historical simulation helps operators review a proposed policy before activating it for a limited time.
 
-Uma aplicação integrada pode utilizar o Qinzora para observar tentativas de acesso, verificar limites de requisições e aplicar políticas de isolamento entre organizações. As regras são declaradas explicitamente e avaliadas por código determinístico.
+## Why Qinzora?
 
-A simulação permite examinar quais eventos previamente registrados seriam afetados por uma política. A ativação exige uma simulação correspondente e a confirmação do impacto pelo operador ou pelo executor de administração, dentro de permissões previamente configuradas. Políticas ativas possuem prazo de validade e podem ser revogadas.
+Changing access policies without evidence can disrupt legitimate requests. Qinzora brings observation, historical replay and temporary enforcement into one inspectable workflow. It separates deterministic access decisions from optional AI explanations and policy proposals. It is a backend designed for integration through HTTP/JSON or a Python SDK; no dashboard is required. These are design choices, not claims of uniqueness or superiority over other tools.
 
-O Qinzora não intercepta tráfego automaticamente. A aplicação integrada precisa fornecer os eventos e executar a decisão retornada pelo serviço. Sua autenticação e autorização próprias devem permanecer implementadas.
+## Implemented features
 
-## Requisitos
+- Candidate policies observe traffic without blocking; active policies expire or can be revoked.
+- Rate limits count attempts by service, route and subject, including denied attempts.
+- Tenant isolation checks trusted identity and resource ownership supplied by the application.
+- Error bursts and latency provide monitoring evidence for completed responses.
+- Historical replay reports affected events and impact by application-provided labels.
+- Scoped manager/collector keys, rotation, account isolation, audit and event export.
+- Synchronous/asynchronous Python clients, CLI, Docker Compose and independent-process HTTP demos.
+- Optional bounded AI administration: typed proposals, explicit authority, fresh replay and transactional execution.
+- Experimental contract-based cached-read continuity; see [status and limits](https://github.com/vinidutraa/qinzora/blob/main/docs/continuity.md).
 
-- Python 3.12 ou superior.
-- Acesso à internet durante a instalação das dependências.
-- Docker Engine e Compose somente para a execução por contêiner.
-- Um endpoint/modelo compatível somente para os recursos opcionais de IA: explicações e administração de políticas.
+## Architecture
 
-A demonstração básica não exige Docker, Ollama ou conexão com uma aplicação existente. Os testes de integração usam serviços locais e dados fictícios.
-
-## Download
-
-O código pode ser obtido em **Code → Download ZIP**, por clonagem Git ou na [página de versões](https://github.com/vinidutraa/qinzora/releases).
-
-```text
-git clone https://github.com/vinidutraa/qinzora.git
-cd qinzora
+```mermaid
+flowchart LR
+    App[Client application] --> Auth[Authenticate and derive ownership]
+    Auth --> Q[Qinzora policy evaluation]
+    Q --> DB[(Events and audit)]
+    DB --> Replay[Historical simulation]
+    Replay --> Review[Operator or authorized executor]
+    Review --> Active[Temporary active policy]
+    Active --> Q
+    Q --> Decision[Decision and evidence]
+    Decision --> Apply[Application permits or denies operation]
 ```
 
-Se o código foi obtido por ZIP, extraia o arquivo e abra um terminal na pasta que contém `pyproject.toml`.
+Python 3.12+, FastAPI, Pydantic, HTTPX and SQLite form the runtime. Pytest and Ruff support verification. Qinzora runs separately from the host application; storage currently supports one service instance with serialized transactions.
 
-Os arquivos `.whl` disponíveis nas versões podem ser instalados com `python -m pip install CAMINHO_DO_ARQUIVO.whl`. O pacote ainda não é distribuído pelo PyPI. A instalação a partir do repositório, descrita abaixo, permite também consultar exemplos e executar os scripts técnicos.
+## Install and run a demonstration
 
-## Instalação e teste no Windows
+Clone the repository or use **Code → Download ZIP**:
 
-No PowerShell, a partir da pasta do projeto:
+```sh
+git clone https://github.com/vinidutraa/qinzora.git
+cd qinzora
+python -m venv .venv
+```
+
+Windows PowerShell, without activating the environment:
 
 ```powershell
-python -m venv .venv
 .venv\Scripts\python.exe -m pip install --require-hashes -r requirements-lock.txt
 .venv\Scripts\python.exe -m pip install --no-deps .
 .venv\Scripts\qinzora.exe demo --present
 ```
 
-Não é necessário ativar o ambiente virtual. Os caminhos explícitos evitam depender da configuração de execução de scripts do PowerShell.
-
-## Instalação e teste no Linux ou macOS
+Linux/macOS:
 
 ```sh
-python3 -m venv .venv
 .venv/bin/python -m pip install --require-hashes -r requirements-lock.txt
 .venv/bin/python -m pip install --no-deps .
 .venv/bin/qinzora demo --present
 ```
 
-Os comandos seguintes utilizam `qinzora` e `python` como abreviações dos executáveis do ambiente virtual. No Windows, correspondem a `.venv\Scripts\qinzora.exe` e `.venv\Scripts\python.exe`. No Linux e macOS, correspondem a `.venv/bin/qinzora` e `.venv/bin/python`.
+The demo starts Qinzora and a fictional documents API as independent processes. It checks same-tenant access, observation of cross-tenant attempts, simulation, activation, denial, revocation, rate limiting, unavailability and recovery. It uses synthetic data and temporary storage, cleans up its processes, and returns `"passed": true` when its checks succeed. No AI, Docker or manual credential setup is required.
 
-## Verificação funcional
+Alternatively, install a wheel from [GitHub Releases](https://github.com/vinidutraa/qinzora/releases) with `python -m pip install PATH_TO_WHEEL.whl`. **No PyPI publication is claimed:** do not assume `pip install qinzora` is available. Package-name ownership and publication remain external steps.
 
-O comando `qinzora demo --present` executa a integração em dois processos independentes: o serviço Qinzora e uma API fictícia de documentos. As etapas e seus resultados são apresentados no terminal.
+Existing 0.3.21 release wheels predate the experimental continuity and documentation changes in this 0.4.0 checkout. Install the current source to try those changes; no older release asset has been overwritten.
 
-O cenário verifica:
+Subsequent commands abbreviate the virtual environment's `python` and `qinzora` executables.
 
-1. Identificação dos processos independentes e autenticação da API de exemplo.
-2. Consulta permitida ao documento da organização do usuário.
-3. Identificação de uma tentativa de acesso entre organizações enquanto a política está em observação.
-4. Simulação histórica da política de isolamento.
-5. Ativação explícita e aplicação da decisão de negação na API integrada.
-6. Revogação da política, preservando a autorização própria da aplicação.
-7. Aplicação de limite de tentativas por identidade e rota.
-8. Resposta HTTP 503, sem documento, quando o Qinzora fica indisponível.
-9. Recuperação após reinício, preservando o banco de dados do cenário.
-
-As etapas concluídas aparecem com `[OK]`. Ao final, o relatório JSON contém `"passed": true`. O comando encerra os processos criados e utiliza armazenamento temporário. Não exige criar `.env` nem provisionar credenciais manualmente.
-
-Outros modos disponíveis:
-
-| Comando | Comportamento |
-| --- | --- |
-| `qinzora demo` | Executa o cenário sintético pela API interna de testes e retorna JSON. |
-| `qinzora demo --live` | Executa os dois processos e retorna o relatório de integração em JSON. |
-| `qinzora demo --present` | Executa a integração e exibe cada etapa antes do relatório final. |
-
-Os dados são fictícios. Um cenário concluído comprova o comportamento verificado, não uma garantia de eficácia para qualquer aplicação ou carga.
-
-## Executar o serviço continuamente
-
-Para utilizar uma instância persistente:
+## Run a persistent service
 
 ```text
 qinzora init
 qinzora serve
 ```
 
-`init` cria `.env` com um token administrativo aleatório e o caminho do banco. O arquivo não é sobrescrito se já existir. Mantenha-o privado e fora do controle de versão.
+`init` creates a private `.env` with a random administrator token and database path, refusing to overwrite an existing file. The default address is `http://127.0.0.1:8765`; interactive API reference is at `/docs`, OpenAPI at `/openapi.json`, readiness at `/healthz`. Keep `.env` outside Git. Provision an integration account and retain its manager and collector keys securely; see [API reference](https://github.com/vinidutraa/qinzora/blob/main/docs/api.md).
 
-Por padrão, o serviço atende em `http://127.0.0.1:8765` e utiliza `data/qinzora.sqlite`. A documentação automática da API fica em `/docs`, o contrato OpenAPI em `/openapi.json` e a verificação de disponibilidade em `/healthz`.
+## Python integration
 
-Para alterar o endereço ou a porta, utilize `qinzora serve --host ENDERECO --port PORTA`. A exposição fora da máquina local exige infraestrutura apropriada, incluindo TLS, controle de acesso e limites de conexão.
+The SDK does not require FastAPI. This helper accepts an `Event` with server-verified identity and resource ownership:
 
-## Funcionamento das políticas
+```python
+from qinzora.client import QinzoraClient, QinzoraUnavailable
+from qinzora.models import Event
 
-### Recebimento de eventos
 
-A integração envia um evento com o serviço, o modelo da rota, o método HTTP e um identificador opaco do sujeito. Políticas de isolamento também exigem a organização da identidade e a organização proprietária do recurso.
+def evaluate_access(base_url: str, collector_key: str, event: Event) -> bool:
+    with QinzoraClient(base_url, collector_key) as guard:
+        try:
+            decision = guard.decide(event)
+        except QinzoraUnavailable:
+            raise  # Return unavailability; do not perform the protected operation.
+        return decision["allowed"]
+```
 
-Esses valores devem ser derivados de informações verificadas pelo servidor. Não devem ser aceitos como declarações arbitrárias do navegador. Corpos de requisição, tokens e parâmetros de consulta não fazem parte do contrato de eventos.
+Reuse the client for a web application's lifecycle. A false result must prevent the operation; a true result still requires the application's own authorization. `AsyncQinzoraClient` provides async equivalents. See [SDK and failure handling](https://github.com/vinidutraa/qinzora/blob/main/docs/sdk.md) and the executable [documents example](https://github.com/vinidutraa/qinzora/blob/main/examples/documents_api.py).
 
-### Observação e decisão
+## Policy lifecycle
 
-`POST /v1/events` registra e avalia um evento sem aplicar bloqueio. `POST /v1/decisions` registra a tentativa e retorna `allowed` para que a aplicação integrada decida se continua a operação. Não envie a mesma tentativa aos dois endpoints: isso duplicaria a contagem. A reutilização do mesmo identificador em modos diferentes é rejeitada.
+Create a candidate with the manager key, for example:
 
-Uma resposta `allowed: true` não substitui a autorização própria da aplicação. Ela indica que nenhuma política de bloqueio ativa do Qinzora negou aquela tentativa.
+```json
+{"name":"Document isolation","service":"documents","route":"/documents/{id}","kind":"tenant_isolation","ttl_seconds":900}
+```
 
-### Simulação e ativação
+`POST /v1/events` records an observation; `POST /v1/decisions` records and evaluates a pre-operation attempt. **Do not submit the same attempt to both endpoints.** Reuse `event_id` only when explicitly retrying the same request and mode.
 
-Uma política é criada no estado candidato. Sua simulação utiliza um snapshot dos eventos retidos, sem repetir as operações reais. O relatório apresenta quantidade de eventos correspondentes, contagens afetadas e uma amostra dos identificadores.
+Call `POST /v1/policies/{id}/simulate`, review the snapshot and affected labels, then activate with `POST /v1/policies/{id}/activate` and `{"simulation_id":"RETURNED_ID","acknowledge_impact":true}`. Activation requires a matching simulation less than 15 minutes old with relevant events. Expiration or `/revoke` stops enforcement.
 
-A ativação exige uma simulação da mesma política, realizada há menos de 15 minutos, com eventos correspondentes e confirmação de impacto. Eventos recebidos depois do snapshot não integram aquele relatório. A expiração ou revogação interrompe a aplicação da política.
-
-### Tipos disponíveis
-
-| Política | Avaliação | Pode negar operações após ativação? |
+| Policy | Purpose | Can deny after activation? |
 | --- | --- | --- |
-| `rate_limit` | Quantidade de tentativas por serviço, rota e sujeito em uma janela. | Sim |
-| `tenant_isolation` | Presença e correspondência das organizações da identidade e do recurso. | Sim |
-| `error_burst` | Concentração de respostas com status a partir de 400. | Não; observação de respostas concluídas. |
-| `latency` | Latência observada superior ao limite configurado. | Não; observação de respostas concluídas. |
+| `rate_limit` | Attempts in a time window | Yes |
+| `tenant_isolation` | Missing or mismatched tenant context | Yes |
+| `error_burst` | Concentration of response status ≥400 | No, observation only |
+| `latency` | Observed latency above a threshold | No, observation only |
 
-## Integração com outras aplicações
+Replay evaluates retained metadata, not real operations. It does not discover correct permissions or prove future absence of false positives. [Policy semantics](https://github.com/vinidutraa/qinzora/blob/main/docs/policies.md).
 
-O cliente `QinzoraClient` pode ser utilizado em aplicações Python sem obrigar o uso de FastAPI. A aplicação de exemplo usa FastAPI. Outras linguagens podem consumir o contrato HTTP/JSON mediante integração própria.
+## Optional AI
 
-O fluxo de configuração é:
+Incident explanations use an optional Ollama model configured through `QINZORA_OLLAMA_URL` and `QINZORA_OLLAMA_MODEL`. Canonical evidence remains available if inference fails. Commentary is advisory and separate from deterministic decisions.
 
-1. Criar uma conta de integração com o token administrativo.
-2. Armazenar separadamente as chaves de gestão e coleta retornadas.
-3. Criar políticas com a chave de gestão.
-4. Enviar eventos ou consultar decisões com a chave de coleta.
-5. Simular e revisar uma política antes de ativá-la.
-6. Executar a decisão na aplicação e tratar indisponibilidade explicitamente.
+Administration is separate: `qinzora manage --config FILE.json` proposes a typed plan; `--execute` applies it only within configured authority. `qinzora watch --config FILE.json --execute` monitors evidence changes. The example does not grant enforcement by default. These operations cannot execute arbitrary shell commands or modify external applications. [AI configuration and limits](https://github.com/vinidutraa/qinzora/blob/main/docs/ai.md).
 
-O [guia de integração](docs/INTEGRACAO.md) apresenta o uso do SDK. O [guia de operação](docs/OPERACAO.md) descreve provisionamento, políticas, rotação de chaves, exportação e retenção. A implementação de referência está em [examples/documents_api.py](examples/documents_api.py).
+## Docker
 
-## Administração opcional por IA
-
-`qinzora manage --config ARQUIVO.json` solicita ao modelo escolhido um plano de administração de políticas. O operador pode revisar o plano ou habilitar sua execução dentro de permissões configuradas. Ativação exige replay com critérios de impacto; planos têm validade, isolamento por conta e execução transacional/idempotente.
-
-Consulte [Administração por IA](docs/ADMINISTRACAO.md) para configuração, operações suportadas, integração com outros frameworks e limites. O comando administra políticas do Qinzora; não modifica automaticamente qualquer aplicação ou infraestrutura. O exemplo de configuração está em `examples/management.json`. `qinzora watch --config ARQUIVO.json --execute` acompanha mudanças continuamente, com checkpoint persistido, lease por conta e espera progressiva para falhas do modelo.
-
-## Explicações opcionais por IA
-
-As decisões são determinísticas. A integração opcional com Ollama produz apenas um comentário sobre as evidências e não pode ativar políticas ou autorizar operações.
-
-Configure `QINZORA_OLLAMA_URL` e `QINZORA_OLLAMA_MODEL` no ambiente ou em `.env`. O endpoint `POST /v1/incidents/{id}/explain` envia somente categorias conhecidas, significados fixos e contagens.
-
-A resposta mantém a explicação canônica em `explanation`. O comentário do modelo, quando disponível, aparece separadamente em `model_explanation`. Em caso de falha, a explicação determinística permanece disponível. O timeout de inferência é de 60 segundos, com timeout de conexão de 2 segundos. O texto do modelo pode conter interpretações incorretas e deve ser tratado como consultivo.
-
-## Docker Compose
-
-Com Docker Engine e Compose disponíveis, gere a configuração com `qinzora init` e execute:
+After `qinzora init`, with Docker Engine and Compose:
 
 ```text
 docker compose up --build -d
@@ -171,13 +143,9 @@ docker compose ps
 docker compose down
 ```
 
-O volume `qinzora-data` preserva o banco. O contêiner utiliza usuário sem privilégios de root e filesystem somente leitura, com diretórios de escrita específicos. A publicação padrão é restrita ao loopback. A variável `QINZORA_PORT` altera a porta externa.
+Compose publishes to loopback, retains SQLite in `qinzora-data`, uses a non-root user and a read-only root filesystem with explicit writable paths. These settings do not replace TLS or access controls. [Deployment and backup](https://github.com/vinidutraa/qinzora/blob/main/docs/deployment.md).
 
-O script `python scripts/docker_smoke.py` verifica a imagem, o fluxo de políticas e a persistência após reinício. Ele cria um projeto Compose exclusivo e remove somente os recursos criados por esse teste.
-
-## Testes e manutenção
-
-Para instalar as ferramentas de desenvolvimento no ambiente virtual:
+## Tests
 
 ```text
 python -m pip install --require-hashes -r requirements-dev-lock.txt
@@ -188,25 +156,19 @@ python -m ruff format --check src tests examples scripts
 python scripts/http_smoke.py
 ```
 
-A CI executa testes em Windows e Linux com Python 3.12 e 3.14, além do teste Docker em Linux. Os resultados atuais podem ser consultados em [GitHub Actions](https://github.com/vinidutraa/qinzora/actions).
+CI covers Windows/Linux with Python 3.12 and 3.14 and a Linux Docker smoke test. A passing demo verifies its scenarios, not arbitrary production workloads. [Validation procedures](https://github.com/vinidutraa/qinzora/blob/main/docs/validation.md).
 
-O comando `qinzora check examples/baseline.json examples/regression.json` retorna código 1 porque o segundo manifesto remove intencionalmente uma proteção. Comparar `baseline.json` consigo mesmo retorna código 0. O verificador compara controles declarados; não inspeciona toda a lógica de autorização da aplicação.
+## What Qinzora does not do
 
-Os scripts `scripts/benchmark.py` e `scripts/ollama_smoke.py` permitem reproduzir verificações de carga local e inferência real, respectivamente. Seus resultados dependem do ambiente de execução. Consulte [VALIDACAO.md](docs/VALIDACAO.md) para os procedimentos e critérios.
+- Intercept traffic automatically, replace authentication/authorization or infer resource ownership.
+- Provide complete application protection, an edge firewall or a distributed rate limiter.
+- Provide high availability, durable integration queues or tamper-proof audit storage.
+- Guarantee correct AI proposals solely because they match a schema.
 
-## Limites operacionais
+Replay is bounded to 100,000 retained events/account. Client keys have a control API limit of 600 requests/minute; request bodies are limited to 1 MiB and policies to 100/account. Pruning changes replay and rate history. Credentials, deployment configuration and callbacks remain operator responsibilities. See [security](https://github.com/vinidutraa/qinzora/blob/main/docs/security.md) and [troubleshooting](https://github.com/vinidutraa/qinzora/blob/main/docs/troubleshooting.md).
 
-O armazenamento atual utiliza SQLite e transações serializadas. O desenho atende uma instância do serviço e não fornece armazenamento distribuído ou alta disponibilidade. O replay é limitado a 100 mil eventos retidos por conta e falha explicitamente se esse limite for excedido.
+## Documentation and contribution
 
-O limite da API de controle é de 600 requisições por minuto por chave de cliente. Há limite de 1 MiB para corpos e de 100 políticas por conta. A capacidade de eventos é um limite técnico configurável. A auditoria local não é inviolável.
+[Documentation index](https://github.com/vinidutraa/qinzora/blob/main/docs/index.md) · [Architecture](https://github.com/vinidutraa/qinzora/blob/main/docs/architecture.md) · [CLI](https://github.com/vinidutraa/qinzora/blob/main/docs/cli.md) · [Distribution](https://github.com/vinidutraa/qinzora/blob/main/docs/distribution.md) · [History disclosure](https://github.com/vinidutraa/qinzora/blob/main/docs/history.md) · [Portuguese guides](https://github.com/vinidutraa/qinzora/blob/main/docs/pt-BR/index.md)
 
-O SDK oferece `QinzoraClient` e `AsyncQinzoraClient`. Integrações que exigem filas duráveis, processamento distribuído ou maior volume precisam implementar e validar esses componentes. O serviço não substitui autenticação, autorização, proteção de borda ou o controle de propriedade dos dados da aplicação integrada.
-
-## Documentação
-
-- [Arquitetura e decisões](docs/ARQUITETURA.md)
-- [Integração em outro projeto](docs/INTEGRACAO.md)
-- [Operação e manutenção](docs/OPERACAO.md)
-- [Procedimentos de validação](docs/VALIDACAO.md)
-- [Contribuição](CONTRIBUTING.md)
-- [Licença MIT](LICENSE)
+The documentation site can be built locally. A configured site URL does not prove public deployment. See [CONTRIBUTING.md](https://github.com/vinidutraa/qinzora/blob/main/CONTRIBUTING.md). Licensed under the [MIT License](https://github.com/vinidutraa/qinzora/blob/main/LICENSE).

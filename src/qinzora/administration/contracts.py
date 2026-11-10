@@ -29,7 +29,20 @@ class RevokePolicy(Model):
     policy_id: str = Field(min_length=1, max_length=100)
 
 
-Operation = Annotated[StagePolicy | EnforcePolicy | RevokePolicy, Field(discriminator="action")]
+class ActivateContinuity(Model):
+    action: Literal["activate_continuity"]
+    profile_id: str = Field(min_length=1, max_length=100)
+
+
+class RevokeContinuity(Model):
+    action: Literal["revoke_continuity"]
+    profile_id: str = Field(min_length=1, max_length=100)
+
+
+Operation = Annotated[
+    StagePolicy | EnforcePolicy | RevokePolicy | ActivateContinuity | RevokeContinuity,
+    Field(discriminator="action"),
+]
 
 
 class PlanProposal(Model):
@@ -57,11 +70,15 @@ class Authority(Model):
     maximum_unknown_affected: int = Field(default=0, ge=0, le=100000)
     maximum_false_positive_rate: float = Field(default=0, ge=0, le=1, allow_inf_nan=False)
     plan_ttl_seconds: int = Field(default=300, ge=1, le=900)
+    continuity_profile_ids: list[str] = Field(default_factory=list, max_length=10)
+    maximum_continuity_evidence_age_seconds: int = Field(default=900, ge=1, le=86400)
 
     def permits(self, policy: Policy) -> bool:
+        return self.permits_scope(policy.service, policy.route)
+
+    def permits_scope(self, service: str, route: str) -> bool:
         return any(
-            scope.service == policy.service and scope.route in ("*", policy.route)
-            for scope in self.routes
+            scope.service == service and scope.route in ("*", route) for scope in self.routes
         )
 
 
@@ -105,6 +122,14 @@ def granted_proposal_type(authority: Authority) -> type[PlanProposal]:
         )
     if authority.revocable_policy_ids:
         operations.append(RevokePolicy)
+    if authority.continuity_profile_ids:
+        identifier_type = Literal[tuple(authority.continuity_profile_ids)]
+        for action in (ActivateContinuity, RevokeContinuity):
+            operations.append(
+                create_model(
+                    "Granted" + action.__name__, __base__=action, profile_id=(identifier_type, ...)
+                )
+            )
     if not operations:
         operation_type = Operation
     else:

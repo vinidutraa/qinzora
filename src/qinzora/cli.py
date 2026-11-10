@@ -4,6 +4,7 @@ import json
 import os
 import secrets
 from datetime import datetime
+from importlib.metadata import version
 from pathlib import Path
 
 from .engine import regressions
@@ -21,6 +22,7 @@ def load_env():
 
 def main():
     parser = argparse.ArgumentParser(description="Qinzora policy service")
+    parser.add_argument("--version", action="version", version=f"Qinzora {version('qinzora')}")
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("init", help="Generate an ignored .env with a random admin token")
     serve = commands.add_parser("serve")
@@ -29,6 +31,12 @@ def main():
     demo = commands.add_parser("demo", help="Run an isolated reproducible demonstration")
     demo.add_argument("--live", action="store_true", help="Two processes with real HTTP")
     demo.add_argument("--present", action="store_true", help="Show integration verification steps")
+    demo.add_argument(
+        "--continuity", action="store_true", help="Rehearse and apply shipping fallback contracts"
+    )
+    demo.add_argument(
+        "--model", help="Use real local Ollama inference for the continuity demonstration"
+    )
     check = commands.add_parser(
         "check", help="Compare declared route protections; exit 1 on regression"
     )
@@ -52,6 +60,11 @@ def main():
     watch.add_argument("--interval", type=float, default=30)
     watch.add_argument("--model-timeout", type=float, default=60)
     args = parser.parse_args()
+    if args.command == "demo":
+        if args.model and not args.continuity:
+            parser.error("--model requires --continuity")
+        if args.continuity and (args.live or args.present):
+            parser.error("--continuity cannot be combined with --live or --present")
     if args.command in ("manage", "watch"):
         import sqlite3
 
@@ -100,7 +113,11 @@ def main():
         load_env()
         uvicorn.run(create_app(), host=args.host, port=args.port, workers=1)
     elif args.command == "demo":
-        if args.live or args.present:
+        if args.continuity:
+            from .continuity.demo import run_continuity_demo
+
+            result = asyncio.run(run_continuity_demo(model=args.model))
+        elif args.live or args.present:
             from .live_demo import run_live_demo
 
             def announce(name, detail):
@@ -112,6 +129,8 @@ def main():
 
             result = run_demo()
         print(json.dumps(result, indent=2, ensure_ascii=False))
+        if args.continuity and not result["passed"]:
+            raise SystemExit(1)
     elif args.command == "check":
         baseline, current = [
             [RouteContract.model_validate(r) for r in json.loads(p.read_text(encoding="utf-8"))]

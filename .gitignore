@@ -11,3 +11,4 @@ dist/
 demo-output.json
 .tools/
 .artifacts/
+site/

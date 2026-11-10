@@ -1,0 +1,17 @@
+name: Bug report
+description: Report a reproducible issue with synthetic data.
+body:
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Commands, expected and actual behavior. Exclude credentials, private events and vulnerability details.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Qinzora version, Python version and operating system.
+    validations:
+      required: true

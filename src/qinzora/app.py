@@ -12,6 +12,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from . import __version__
+from .continuity.http import create_router as continuity_router
 from .engine import regressions
 from .errors import ApplicationError, require
 from .explain import explain
@@ -300,4 +301,5 @@ def create_app(db_path: str | None = None, admin_token: str | None = None):
                 "enabled": bool(row["enabled"]),
             }
 
+    app.include_router(continuity_router(store, manager))
     return app
