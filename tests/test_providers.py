@@ -134,3 +134,29 @@ def test_transport_failure_and_cancellation_close_lifecycle(failure):
 def test_model_endpoint_configuration_rejects_embedded_credentials(base_url):
     with pytest.raises(ValueError):
         HTTPStructuredModel("ollama", base_url, "model")
+
+
+def test_total_model_deadline_cancels_an_incomplete_response_and_closes_it():
+    class StalledStream(httpx.AsyncByteStream):
+        closed = False
+
+        async def __aiter__(self):
+            yield b'{"done":'
+            await asyncio.Event().wait()
+
+        async def aclose(self):
+            self.closed = True
+
+    async def run():
+        stream = StalledStream()
+        transport = httpx.MockTransport(lambda _: httpx.Response(200, stream=stream))
+        async with HTTPStructuredModel(
+            "ollama", "http://model.test", "model", timeout=0.02, transport=transport
+        ) as model:
+            with pytest.raises(ModelUnavailable):
+                # This outer deadline makes a missing provider deadline fail the test promptly.
+                async with asyncio.timeout(0.5):
+                    await model.generate("s", {}, Proposal)
+        assert stream.closed and model.http.is_closed
+
+    asyncio.run(run())

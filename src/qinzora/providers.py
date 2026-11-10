@@ -1,5 +1,6 @@
 """Structured model adapters. No tools, credentials or execution rights in prompts."""
 
+import asyncio
 import json
 from typing import Any, Literal, Protocol
 
@@ -54,6 +55,7 @@ class HTTPStructuredModel:
         if not 1 <= max_tokens <= 8192 or not 0 < timeout <= 300:
             raise ValueError("Invalid model timeout or output token limit")
         self.provider, self.model, self.max_tokens = provider, model, max_tokens
+        self.timeout = timeout
         self.http = httpx.AsyncClient(
             base_url=base_url.rstrip("/") + "/",
             timeout=httpx.Timeout(timeout, connect=min(5, timeout)),
@@ -105,13 +107,14 @@ class HTTPStructuredModel:
                 },
             )
         try:
-            async with self.http.stream("POST", path, json=body) as response:
-                response.raise_for_status()
-                raw = bytearray()
-                async for chunk in response.aiter_bytes(chunk_size=65536):
-                    if len(raw) + len(chunk) > 262144:
-                        raise ValueError("Model response exceeds limit")
-                    raw.extend(chunk)
+            async with asyncio.timeout(self.timeout):
+                async with self.http.stream("POST", path, json=body) as response:
+                    response.raise_for_status()
+                    raw = bytearray()
+                    async for chunk in response.aiter_bytes(chunk_size=65536):
+                        if len(raw) + len(chunk) > 262144:
+                            raise ValueError("Model response exceeds limit")
+                        raw.extend(chunk)
             data = json.loads(raw)
             if not isinstance(data, dict):
                 raise ValueError("Invalid model envelope")
@@ -129,7 +132,15 @@ class HTTPStructuredModel:
             if not isinstance(content, str) or not content.strip():
                 raise ValueError("Empty model response")
             return result_type.model_validate_json(content)
-        except (httpx.HTTPError, ValueError, KeyError, IndexError, TypeError, ValidationError):
+        except (
+            httpx.HTTPError,
+            TimeoutError,
+            ValueError,
+            KeyError,
+            IndexError,
+            TypeError,
+            ValidationError,
+        ):
             # Provider bodies/errors can contain prompts or credentials. Do not expose them.
             raise ModelUnavailable(
                 "Model did not return a complete, valid structured response"

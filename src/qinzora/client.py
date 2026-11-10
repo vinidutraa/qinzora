@@ -12,18 +12,23 @@ class Decision(TypedDict, total=False):
     """Decision envelope; callers must retain their own authorization checks."""
 
     allowed: Required[bool]
-    event_id: str
-    mode: str
+    event_id: Required[str]
+    mode: Required[str]
     findings: list[dict[str, Any]]
     blocks: list[dict[str, Any]]
     received_at: str
     duplicate: bool
 
 
-def _decision(response: httpx.Response) -> Decision:
+def _decision(response: httpx.Response, event_id: str, mode: str) -> Decision:
     response.raise_for_status()
     data = response.json()
-    if not isinstance(data, dict) or not isinstance(data.get("allowed"), bool):
+    if (
+        not isinstance(data, dict)
+        or not isinstance(data.get("allowed"), bool)
+        or data.get("event_id") != event_id
+        or data.get("mode") != mode
+    ):
         raise ValueError("Invalid decision response")
     return cast(Decision, data)
 
@@ -57,9 +62,12 @@ class QinzoraClient:
         self.close()
 
     def _send(self, path: str, event: Event) -> Decision:
+        payload = event.model_dump(mode="json")
         try:
-            response = self.http.post(path, json=event.model_dump(mode="json"))
-            return _decision(response)
+            response = self.http.post(path, json=payload)
+            return _decision(
+                response, payload["event_id"], "enforce" if path == "/v1/decisions" else "observe"
+            )
         except (httpx.HTTPError, ValueError) as exc:
             # Never turn an unavailable guard into an implicit allow.
             raise QinzoraUnavailable("Qinzora did not return a valid decision") from exc
@@ -102,9 +110,12 @@ class AsyncQinzoraClient:
         await self.aclose()
 
     async def _send(self, path: str, event: Event) -> Decision:
+        payload = event.model_dump(mode="json")
         try:
-            response = await self.http.post(path, json=event.model_dump(mode="json"))
-            return _decision(response)
+            response = await self.http.post(path, json=payload)
+            return _decision(
+                response, payload["event_id"], "enforce" if path == "/v1/decisions" else "observe"
+            )
         except (httpx.HTTPError, ValueError) as exc:
             raise QinzoraUnavailable("Qinzora did not return a valid decision") from exc
 

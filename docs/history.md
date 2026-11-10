@@ -4,6 +4,12 @@ description: "Functional changes, version notes and disclosure of administrative
 ---
 # Repository history and version counters
 
+## 0.4.1
+
+Fixes decision-response correlation in both Python clients, strict verified authorization in continuity, and contract changes during primary/cache I/O. Adds an overall deadline for structured model calls and bounded, complete-response validation for advisory explanations. Rejects invalid administrator credentials at startup and malformed bearer values with an authentication error. Runtime, health and package metadata now report the same installed version.
+
+Adds `qinzora backup`, a consistent SQLite snapshot command with overwrite protection, integrity verification, a bounded copy deadline and a restore/enforcement regression test. See the [quality review](quality-review.md) for reproduced defects, validation and remaining production work.
+
 ## 0.4.0
 
 Adds experimental contract-based read continuity, its management API and scoped administration grants. Introduces English documentation and canonical explanation text, a published static documentation site, package metadata and validation workflows. Explanation field names/reason identifiers and deterministic access rules remain unchanged. Real-model continuity activation was verified in a bounded synthetic scenario; see [recorded evidence](validation/continuity-real-model.json).

@@ -69,28 +69,28 @@ def test_regression_contracts():
         regressions([route, route], [route])
 
 
-def test_llm_unavailable_falls_back(monkeypatch):
+def test_llm_unavailable_falls_back():
     def fail(*args, **kwargs):
         raise httpx.ConnectError("offline")
 
-    monkeypatch.setattr(httpx.Client, "post", fail)
-    result = explain({"findings": [{"reason": "cross_tenant_access"}]}, "http://localhost", "test")
+    result = explain(
+        {"findings": [{"reason": "cross_tenant_access"}]},
+        "http://localhost",
+        "test",
+        transport=httpx.MockTransport(fail),
+    )
     assert result["source"] == "deterministic" and result["model_error"]
 
 
-def test_llm_receives_only_enumerated_counts(monkeypatch):
-    def respond(self, url, **kwargs):
-        import json
-
-        payload = json.dumps(kwargs["json"])
+def test_llm_receives_only_enumerated_counts():
+    def respond(request):
+        payload = request.content.decode()
         assert "secret-user" not in payload and "company-secret" not in payload
         return httpx.Response(
             200,
-            json={"message": {"content": "Resumo limitado às evidências."}},
-            request=httpx.Request("POST", url),
+            json={"done": True, "message": {"content": "Summary limited to the evidence."}},
         )
 
-    monkeypatch.setattr(httpx.Client, "post", respond)
     result = explain(
         {
             "findings": [
@@ -103,6 +103,7 @@ def test_llm_receives_only_enumerated_counts(monkeypatch):
         },
         "http://localhost",
         "test",
+        transport=httpx.MockTransport(respond),
     )
     assert result["source"] == "ollama" and result["advisory_only"]
 

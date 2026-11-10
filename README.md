@@ -76,6 +76,9 @@ Changing access policies without evidence can disrupt legitimate requests. Qinzo
 - Synchronous/asynchronous Python clients, CLI, Docker Compose and independent-process HTTP demos.
 - Optional bounded AI administration: typed proposals, explicit authority, fresh replay and transactional execution.
 - Experimental contract-based cached-read continuity; see [status and limits](https://github.com/vinidutraa/qinzora/blob/main/docs/continuity.md).
+- Consistent SQLite backups with overwrite protection and a tested restoration path.
+
+See the [quality review](https://vinidutraa.github.io/qinzora/quality-review/) for corrected defects, reproducible checks and the remaining boundaries before a hosted SaaS.
 
 ## Policy lifecycle
 

@@ -46,6 +46,8 @@ def main():
         "prune", help="Offline retention maintenance after exporting events"
     )
     prune.add_argument("--before", required=True)
+    backup = commands.add_parser("backup", help="Create a consistent SQLite snapshot")
+    backup.add_argument("--output", type=Path, required=True)
     manage = commands.add_parser("manage", help="Propose an AI administration plan for one account")
     manage.add_argument("--config", type=Path, required=True)
     manage.add_argument(
@@ -100,7 +102,11 @@ def main():
         print(json.dumps(result, indent=2, ensure_ascii=False))
     elif args.command == "init":
         path = Path(".env")
-        with path.open("x", encoding="utf-8") as file:
+        try:
+            descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        except FileExistsError:
+            parser.exit(1, "Environment already exists; credentials were not changed\n")
+        with os.fdopen(descriptor, "w", encoding="utf-8") as file:
             file.write(
                 f"QINZORA_ADMIN_TOKEN={secrets.token_urlsafe(48)}\nQINZORA_DB=data/qinzora.sqlite\n"
             )
@@ -139,6 +145,17 @@ def main():
         findings = regressions(baseline, current)
         print(json.dumps({"passed": not findings, "findings": findings}, indent=2))
         raise SystemExit(1 if findings else 0)
+    elif args.command == "backup":
+        import sqlite3
+
+        from .store import Store
+
+        load_env()
+        try:
+            output = Store(os.environ.get("QINZORA_DB", "data/qinzora.sqlite")).backup(args.output)
+        except (OSError, ValueError, sqlite3.Error, RuntimeError):
+            parser.exit(1, "Backup failed; check the source, destination, permissions and space\n")
+        print(json.dumps({"backup": str(output), "consistent": True}))
     elif args.command == "prune":
         from .store import Store
 

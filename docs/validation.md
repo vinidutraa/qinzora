@@ -19,6 +19,8 @@ qinzora demo --continuity
 
 Coverage includes tenant boundaries, key roles, rate windows, replay/activation/expiry/revocation, idempotence, migrations, SDK failures, administration authority/transactions, monitor leases/checkpoints and continuity safeguards. Simulated providers do not prove inference quality. HTTP smoke/process demos exercise loopback services.
 
+The [0.4.1 quality review](quality-review.md) records response correlation, contract-change races, malformed credential rejection, provider deadlines/output bounds and actual backup restoration checks, along with remaining production work.
+
 Optional environment-specific checks:
 
 ```text

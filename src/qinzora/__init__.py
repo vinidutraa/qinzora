@@ -1,3 +1,5 @@
 """Qinzora: observe, explain, simulate, enforce."""
 
-__version__ = "0.3.21"
+from importlib.metadata import version
+
+__version__ = version("qinzora")

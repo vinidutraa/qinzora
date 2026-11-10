@@ -21,8 +21,11 @@ Use `qinzora --help` and per-command `--help` for flags.
 | `qinzora manage --config FILE.json --plan ID --execute` | Execute that plan within authority |
 | `qinzora watch --config FILE.json --execute --interval 30 --model-timeout 60` | Monitor changes and administer within authority |
 | `qinzora prune --before 2026-01-01T00:00:00+00:00` | Offline deletion of older events across accounts |
+| `qinzora backup --output backups/snapshot.sqlite` | Consistent SQLite backup; refuse overwrite and validate the snapshot |
 
 Export before pruning and stop the normal service for offline maintenance. Pruning changes replay/rate history; audit and incidents remain. Timestamps require a timezone.
+
+Create the private destination directory before backing up. A live backup uses SQLite's backup API; [rehearse restoration](deployment.md#storage-and-recovery) before relying on it for recovery.
 
 Regression manifests declare `method`, `path`, `authenticated`, `tenant_isolation`. Comparing `examples/baseline.json` with `examples/regression.json` intentionally exits 1; comparing baseline with itself exits 0. The checker does not inspect arbitrary code or prove authorization works.
 

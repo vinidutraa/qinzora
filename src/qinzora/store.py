@@ -1,5 +1,7 @@
 import json
+import os
 import sqlite3
+import time
 from contextlib import closing, contextmanager
 from pathlib import Path
 from uuid import uuid4
@@ -13,6 +15,36 @@ class Store:
 
     def __init__(self, path: str):
         self.path = path
+
+    def backup(self, destination: str | Path, *, timeout: float = 30) -> Path:
+        """Create a consistent standalone SQLite snapshot without replacing any file."""
+        if not 0 < timeout <= 3600:
+            raise ValueError("Backup timeout must be in (0, 3600]")
+        source, target = Path(self.path).resolve(strict=True), Path(destination).resolve()
+        if source == target:
+            raise ValueError("Backup destination must differ from the source")
+        deadline = time.monotonic() + timeout
+
+        def progress(status, remaining, total):
+            if time.monotonic() >= deadline:
+                raise TimeoutError("Backup deadline exceeded")
+
+        # Read-only prevents accidental creation or migration of the source.
+        with closing(sqlite3.connect(source.as_uri() + "?mode=ro", uri=True)) as original:
+            versions = original.execute("SELECT version FROM schema_version").fetchall()
+            if len(versions) != 1 or versions[0][0] not in (1, 2):
+                raise RuntimeError("Unsupported database schema")
+            descriptor = os.open(target, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+            os.close(descriptor)
+            try:
+                with closing(sqlite3.connect(target)) as copy:
+                    original.backup(copy, pages=256, progress=progress, sleep=0.01)
+                    if copy.execute("PRAGMA quick_check").fetchall() != [("ok",)]:
+                        raise RuntimeError("Backup integrity check failed")
+            except BaseException:
+                target.unlink(missing_ok=True)
+                raise
+        return target
 
     def initialize(self):
         Path(self.path).parent.mkdir(parents=True, exist_ok=True)

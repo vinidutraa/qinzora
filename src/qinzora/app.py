@@ -67,8 +67,8 @@ class BodyLimit:
 
 def create_app(db_path: str | None = None, admin_token: str | None = None):
     token = admin_token or os.environ.get("QINZORA_ADMIN_TOKEN", "")
-    if len(token) < 32:
-        raise ValueError("QINZORA_ADMIN_TOKEN must contain at least 32 characters")
+    if not 32 <= len(token) <= 512 or any(not 33 <= ord(char) <= 126 for char in token):
+        raise ValueError("QINZORA_ADMIN_TOKEN must contain 32–512 visible ASCII characters")
     store = Store(db_path or os.environ.get("QINZORA_DB", "data/qinzora.sqlite"))
 
     @asynccontextmanager
@@ -105,7 +105,7 @@ def create_app(db_path: str | None = None, admin_token: str | None = None):
         if not authorization or not authorization.startswith("Bearer "):
             raise HTTPException(401, "Bearer token required")
         value = authorization[7:]
-        if len(value) > 512:
+        if not value or len(value) > 512 or any(not 33 <= ord(char) <= 126 for char in value):
             raise HTTPException(401, "Invalid token")
         return value
 

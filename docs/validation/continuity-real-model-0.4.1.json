@@ -1,0 +1,56 @@
+{
+  "recorded_at": "2026-11-10T10:02:18.549704+00:00",
+  "python": "3.14.7",
+  "platform": "Windows",
+  "model": "qwen3:4b-instruct",
+  "model_digest": "0edcdef34593eac1aa2be9c7d06c432dcf81945adca5eca2f27662c18f168ba0",
+  "duration_seconds": 28.401,
+  "passed": true,
+  "trials": [
+    {
+      "passed": true,
+      "steps": [
+        {
+          "step": "compare_rehearsals",
+          "passed": true
+        },
+        {
+          "step": "activate_registered_profile",
+          "passed": true
+        },
+        {
+          "step": "read_fallback",
+          "passed": true
+        },
+        {
+          "step": "checkout_no_cached_write",
+          "passed": true
+        },
+        {
+          "step": "reject_expired_live_snapshot",
+          "passed": true
+        },
+        {
+          "step": "reject_wrong_currency",
+          "passed": true
+        },
+        {
+          "step": "primary_recovery",
+          "passed": true
+        }
+      ],
+      "inference": "real Ollama",
+      "model": "qwen3:4b-instruct",
+      "actions": [
+        {
+          "action": "activate_continuity",
+          "profile_id": "8d815474-d60c-4bc6-b350-3f68d374af0e"
+        }
+      ],
+      "rationale": "The objective is to maintain shipping estimates during outages, ensuring no cached checkout writes and no incorrect currency. The profile 'local estimates' (ID: 8d815474-d60c-4bc6-b350-3f68d374af0e) has a fresh, passing rehearsal (eligible: true, failed_cases: 0), while the 'stale backup' profile is unavailable and has a failing dependency. The 'local estimates' profile meets all contract requirements, including correct currency validation and no cached writes for checkout. Given that the primary dependency is unavailable and the 'local estimates' profile is eligible and fresh, it is the only valid candidate for activation. Activation ensures continuity without violating tenant isolation or introducing cached writes or incorrect data. The 'stale backup' profile is not activated due to its unavailability and failure history. This action aligns with the authority's objective and constraints, including no cached writes and strict currency enforcement.",
+      "transport": "real loopback HTTP management; synthetic primary/cache adapters",
+      "limitation": "Synthetic example; no guarantee of model accuracy or resilience."
+    }
+  ],
+  "scope": "Real local inference and loopback HTTP; synthetic shipping/cache adapters. This is a bounded demonstration, not a production reliability guarantee."
+}

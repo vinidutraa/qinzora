@@ -71,7 +71,7 @@ class ContinuityRuntime:
                 require(repository.get("continuity_contract", contract_id))
             )
         reasons = []
-        if not call.authorized:
+        if call.authorized is not True:
             reasons.append("authorization_required")
         if not call.actor_tenant or call.actor_tenant != call.resource_tenant:
             reasons.append("tenant_scope_mismatch")
@@ -94,8 +94,15 @@ class ContinuityRuntime:
             # No retry: a write may have committed before the dependency failed.
             return await self._fallback(contract_id, contract, call)
         with self.repository() as repository:
+            self._verify_contract(repository, contract_id, contract)
             record_health(repository, contract_id, healthy=True)
         return ContinuityResponse(dict(data), "primary")
+
+    @staticmethod
+    def _verify_contract(repository, contract_id: str, contract: OperationContract) -> None:
+        current = repository.get("continuity_contract", contract_id)
+        if current is None or OperationContract.model_validate(current) != contract:
+            raise ContinuityUnavailable(["operation_contract_changed"])
 
     async def _fallback(
         self, contract_id: str, contract: OperationContract, call: VerifiedCall
@@ -104,6 +111,7 @@ class ContinuityRuntime:
             raise ContinuityUnavailable(["cached_response_not_permitted"])
         try:
             with self.repository() as repository:
+                self._verify_contract(repository, contract_id, contract)
                 profile = resolve_profile(repository, contract_id)
         except ApplicationError:
             raise ContinuityUnavailable(["no_active_continuity_profile"]) from None
@@ -122,6 +130,7 @@ class ContinuityRuntime:
         data = dict(snapshot.data)
         try:
             with self.repository() as repository:
+                self._verify_contract(repository, contract_id, contract)
                 current = resolve_profile(repository, contract_id)
                 if (
                     current["id"] != profile["id"]

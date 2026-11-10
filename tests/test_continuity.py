@@ -304,3 +304,53 @@ def test_caller_cancellation_does_not_start_a_fallback(continuity):
                 read, VerifiedCall("storefront", "a", "a", True), cancelled
             )
         )
+
+
+@pytest.mark.parametrize("authorized", ["false", "true", 1])
+def test_authorization_requires_a_literal_verified_boolean(continuity, authorized):
+    repository, read, _, _, _ = continuity
+
+    async def forbidden(*args):
+        pytest.fail("Truthy values must not be treated as verified authorization")
+
+    with pytest.raises(ContinuityUnavailable, match="No permitted"):
+        asyncio.run(
+            ContinuityRuntime(repository, {}).run(
+                read, VerifiedCall("storefront", "a", "a", authorized), forbidden
+            )
+        )
+
+
+@pytest.mark.parametrize("primary_available", [False, True])
+def test_contract_change_during_primary_call_cannot_use_the_old_contract(
+    continuity, primary_available
+):
+    repository, read, _, profile, suite = continuity
+    enable(continuity)
+
+    async def primary():
+        # A host adapter can update its registered contract while awaiting I/O.
+        with repository() as repo:
+            contract = repo.get("continuity_contract", read)
+            contract["required_fields"].append("tax")
+            repo.put("continuity_contract", contract, read)
+            updated = suite.model_copy(deep=True)
+            for scenario in updated.scenarios:
+                if scenario.contract_id == read:
+                    scenario.observed.fields.append("tax")
+            set_rehearsal(repo, profile, updated)
+            activate_profile(repo, profile, maximum_ttl=60, maximum_evidence_age=900)
+        if primary_available:
+            return {"amount": 12, "currency": "BRL"}
+        raise DependencyUnavailable("primary offline")
+
+    async def old_snapshot(*args):
+        return CachedResponse({"amount": 12, "currency": "BRL"}, now(), "storefront", "a")
+
+    with pytest.raises(ContinuityUnavailable) as failure:
+        asyncio.run(
+            ContinuityRuntime(repository, {"local_estimates": old_snapshot}).run(
+                read, VerifiedCall("storefront", "a", "a", True), primary
+            )
+        )
+    assert failure.value.reasons == ["operation_contract_changed"]

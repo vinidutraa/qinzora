@@ -14,7 +14,13 @@ KNOWN_REASONS = {
 }
 
 
-def explain(incident: dict, base_url: str | None = None, model: str | None = None):
+def explain(
+    incident: dict,
+    base_url: str | None = None,
+    model: str | None = None,
+    *,
+    transport: httpx.BaseTransport | None = None,
+):
     counts = Counter(f["reason"] for f in incident["findings"] if f["reason"] in KNOWN_REASONS)
     result = {
         "source": "deterministic",
@@ -28,9 +34,13 @@ def explain(incident: dict, base_url: str | None = None, model: str | None = Non
         return result
     try:
         with httpx.Client(
-            timeout=httpx.Timeout(60, connect=2), follow_redirects=False, trust_env=False
+            timeout=httpx.Timeout(60, connect=2),
+            follow_redirects=False,
+            trust_env=False,
+            transport=transport,
         ) as client:
-            response = client.post(
+            with client.stream(
+                "POST",
                 base_url.rstrip("/") + "/api/chat",
                 json={
                     "model": model,
@@ -62,9 +72,21 @@ def explain(incident: dict, base_url: str | None = None, model: str | None = Non
                     ],
                     "options": {"temperature": 0, "num_predict": 160},
                 },
-            )
-            response.raise_for_status()
-            content = response.json()["message"]["content"]
+            ) as response:
+                response.raise_for_status()
+                raw = bytearray()
+                for chunk in response.iter_bytes():
+                    if len(raw) + len(chunk) > 262144:
+                        raise ValueError("Model response exceeds limit")
+                    raw.extend(chunk)
+            envelope = json.loads(raw)
+            if (
+                not isinstance(envelope, dict)
+                or envelope.get("done") is not True
+                or envelope.get("done_reason", "stop") != "stop"
+            ):
+                raise ValueError("Incomplete model response")
+            content = envelope["message"]["content"]
             if not isinstance(content, str) or not content.strip() or len(content) > 5000:
                 raise ValueError("Invalid model response")
             # Canonical explanation remains grounded, even if the model invents details.

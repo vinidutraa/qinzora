@@ -49,6 +49,7 @@ nav:
       - Security: security.md
       - Troubleshooting: troubleshooting.md
       - Validation: validation.md
+      - Quality review: quality-review.md
   - Distribution: distribution.md
   - Contributing: contributing.md
   - History disclosure: history.md

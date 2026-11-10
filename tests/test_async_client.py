@@ -16,7 +16,13 @@ def test_async_sdk_sends_event_identity_and_closes(monkeypatch, operation, path)
         assert client.headers["Authorization"] == "Bearer collector-test"
         assert kwargs["json"]["event_id"] == event.event_id
         return httpx.Response(
-            200, json={"allowed": False}, request=httpx.Request("POST", "http://test")
+            200,
+            json={
+                "allowed": False,
+                "event_id": event.event_id,
+                "mode": "observe" if operation == "observe" else "enforce",
+            },
+            request=httpx.Request("POST", "http://test"),
         )
 
     monkeypatch.setattr(httpx.AsyncClient, "post", respond)

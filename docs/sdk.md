@@ -4,6 +4,8 @@ description: "Integrate synchronous or asynchronous Python clients with explicit
 ---
 # Python SDK
 
+Both clients validate `allowed`, the returned `event_id` and the operation `mode`. A response for another event or an observation returned to a decision request raises `QinzoraUnavailable`; it never becomes an implicit allow. The event is serialized before sending so later caller mutation cannot change which response is expected.
+
 `qinzora.client` exports `QinzoraClient`, `AsyncQinzoraClient` and `QinzoraUnavailable`. Both provide `observe(event)` and `decide(event)`. Keep a client for the application lifecycle and close it on shutdown. No FastAPI dependency is imposed on the host; other languages can use HTTP.
 
 ```python
