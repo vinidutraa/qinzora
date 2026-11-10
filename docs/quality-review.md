@@ -39,7 +39,7 @@ The restoration test recovers actual account keys, an active policy, events and 
 - Isolated installed wheel, executed outside the checkout: version 0.4.1, independent-process demonstration and backup command passed.
 - Documentation: strict build and checks passed for 17 English pages.
 - [Synthetic loopback benchmark](validation/benchmark-0.4.1.json): 400/400 HTTP 200 responses with 8 concurrent clients; 64.24 requests/second, p95 305.94 ms, maximum 996.64 ms. Pure in-memory replay of 100,000 events took 0.177 seconds. These are single-host Windows/Python 3.14.7 measurements, not a service-level promise or a comparison against another release.
-- [Real local model check](validation/continuity-real-model-0.4.1.json): one trial completed all seven checks using `qwen3:4b-instruct`; the model invocation took 28.401 seconds. Primary/cache adapters remain synthetic; model rationale remains advisory and can misinterpret context.
+- [Real local model check](validation/continuity-real-model-0.4.1.json): one trial completed all seven checks using `qwen3:4b-instruct`; the full trial took 28.401 seconds, including model inference and scenario execution. Primary/cache adapters remain synthetic; model rationale remains advisory and can misinterpret context.
 
 The report records local evidence. Remote CI results must be checked independently against the published commit through [GitHub Actions](https://github.com/vinidutraa/qinzora/actions).
 
