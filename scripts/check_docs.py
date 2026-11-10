@@ -35,8 +35,7 @@ def main():
         page.feed(path.read_text(encoding="utf-8"))
         if not all((page.meta.get("description"), page.meta.get("og:title"), page.canonical)):
             raise ValueError(f"Missing discovery metadata: {path}")
-        language = "pt-BR" if "pt-BR" in path.parts else "en"
-        if page.language != language:
+        if page.language != "en":
             raise ValueError(f"Incorrect document language: {path}")
         for link in page.links:
             url = urlsplit(link)

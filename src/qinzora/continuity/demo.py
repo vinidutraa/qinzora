@@ -270,6 +270,8 @@ async def run_continuity_demo(
                 "steps": steps,
                 "inference": "real Ollama" if model else "scripted planner; no model inference",
                 "model": model,
+                "actions": selected,
+                "rationale": plan["proposal"]["rationale"],
                 "transport": "real loopback HTTP management; synthetic primary/cache adapters",
                 "limitation": "Synthetic example; no guarantee of model accuracy or resilience.",
             }

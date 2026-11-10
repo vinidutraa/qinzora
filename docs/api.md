@@ -1,6 +1,6 @@
 ---
 title: "HTTP API reference"
-description: "The running instance exposes `/openapi.json` and interactive `/docs`. These generated contracts are authoritative for exact schemas, including experimental continuity routes. Version 0.4.0 uses Englis"
+description: "HTTP endpoints, account roles, event contracts, policy lifecycle and operational limits."
 ---
 # HTTP API reference
 

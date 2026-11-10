@@ -1,6 +1,6 @@
 ---
 title: "Getting started and installation"
-description: "Use Python 3.12 or newer. Download a ZIP or clone the repository. Docker and a model provider are not needed for the basic demonstration. Internet access is needed for dependencies."
+description: "Install Qinzora and run its reproducible two-process HTTP demonstration."
 ---
 # Getting started and installation
 

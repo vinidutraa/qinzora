@@ -1,6 +1,6 @@
 ---
 title: "CLI reference"
-description: "Use `qinzora --help` and per-command `--help` for flags."
+description: "Qinzora commands for demonstrations, serving, policy administration and maintenance."
 ---
 # CLI reference
 

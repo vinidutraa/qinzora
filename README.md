@@ -1,49 +1,18 @@
 # Qinzora
 
 [![Python checks](https://github.com/vinidutraa/qinzora/actions/workflows/ci.yml/badge.svg)](https://github.com/vinidutraa/qinzora/actions/workflows/ci.yml)
-[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)](pyproject.toml)
-[![MIT License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Documentation](https://github.com/vinidutraa/qinzora/actions/workflows/docs.yml/badge.svg)](https://vinidutraa.github.io/qinzora/)
+[![Package validation](https://github.com/vinidutraa/qinzora/actions/workflows/package.yml/badge.svg)](https://github.com/vinidutraa/qinzora/actions/workflows/package.yml)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)](https://github.com/vinidutraa/qinzora/blob/main/pyproject.toml)
+[![MIT License](https://img.shields.io/badge/license-MIT-green)](https://github.com/vinidutraa/qinzora/blob/main/LICENSE)
 
 **Evaluate API policies, inspect evidence, and simulate historical impact before enforcement.**
 
-[Português brasileiro](https://github.com/vinidutraa/qinzora/blob/main/README.pt-BR.md) · [Documentation](https://github.com/vinidutraa/qinzora/blob/main/docs/index.md) · [Releases](https://github.com/vinidutraa/qinzora/releases) · [Contributing](https://github.com/vinidutraa/qinzora/blob/main/CONTRIBUTING.md)
+[Quick start](#quick-start) · [How it works](#policy-lifecycle) · [Documentation](https://vinidutraa.github.io/qinzora/) · [Releases](https://github.com/vinidutraa/qinzora/releases) · [Contributing](https://github.com/vinidutraa/qinzora/blob/main/CONTRIBUTING.md)
 
 Qinzora is an open-source Python service for API security policy evaluation, rate limiting, tenant isolation and incident monitoring. Applications send structured events and enforce the decisions it returns. Historical simulation helps operators review a proposed policy before activating it for a limited time.
 
-## Why Qinzora?
-
-Changing access policies without evidence can disrupt legitimate requests. Qinzora brings observation, historical replay and temporary enforcement into one inspectable workflow. It separates deterministic access decisions from optional AI explanations and policy proposals. It is a backend designed for integration through HTTP/JSON or a Python SDK; no dashboard is required. These are design choices, not claims of uniqueness or superiority over other tools.
-
-## Implemented features
-
-- Candidate policies observe traffic without blocking; active policies expire or can be revoked.
-- Rate limits count attempts by service, route and subject, including denied attempts.
-- Tenant isolation checks trusted identity and resource ownership supplied by the application.
-- Error bursts and latency provide monitoring evidence for completed responses.
-- Historical replay reports affected events and impact by application-provided labels.
-- Scoped manager/collector keys, rotation, account isolation, audit and event export.
-- Synchronous/asynchronous Python clients, CLI, Docker Compose and independent-process HTTP demos.
-- Optional bounded AI administration: typed proposals, explicit authority, fresh replay and transactional execution.
-- Experimental contract-based cached-read continuity; see [status and limits](https://github.com/vinidutraa/qinzora/blob/main/docs/continuity.md).
-
-## Architecture
-
-```mermaid
-flowchart LR
-    App[Client application] --> Auth[Authenticate and derive ownership]
-    Auth --> Q[Qinzora policy evaluation]
-    Q --> DB[(Events and audit)]
-    DB --> Replay[Historical simulation]
-    Replay --> Review[Operator or authorized executor]
-    Review --> Active[Temporary active policy]
-    Active --> Q
-    Q --> Decision[Decision and evidence]
-    Decision --> Apply[Application permits or denies operation]
-```
-
-Python 3.12+, FastAPI, Pydantic, HTTPX and SQLite form the runtime. Pytest and Ruff support verification. Qinzora runs separately from the host application; storage currently supports one service instance with serialized transactions.
-
-## Install and run a demonstration
+## Quick start
 
 Clone the repository or use **Code → Download ZIP**:
 
@@ -73,38 +42,40 @@ The demo starts Qinzora and a fictional documents API as independent processes. 
 
 Alternatively, install a wheel from [GitHub Releases](https://github.com/vinidutraa/qinzora/releases) with `python -m pip install PATH_TO_WHEEL.whl`. **No PyPI publication is claimed:** do not assume `pip install qinzora` is available. Package-name ownership and publication remain external steps.
 
-Existing 0.3.21 release wheels predate the experimental continuity and documentation changes in this 0.4.0 checkout. Install the current source to try those changes; no older release asset has been overwritten.
+Continuity requires version 0.4.0 or newer. Historical 0.3.x wheels predate that feature; their release assets have not been overwritten.
 
 Subsequent commands abbreviate the virtual environment's `python` and `qinzora` executables.
 
-## Run a persistent service
+## See the complete workflow
 
 ```text
-qinzora init
-qinzora serve
+Observe → inspect evidence → replay retained history → review impact
+        → activate temporarily → enforce in the host → expire or revoke
 ```
 
-`init` creates a private `.env` with a random administrator token and database path, refusing to overwrite an existing file. The default address is `http://127.0.0.1:8765`; interactive API reference is at `/docs`, OpenAPI at `/openapi.json`, readiness at `/healthz`. Keep `.env` outside Git. Provision an integration account and retain its manager and collector keys securely; see [API reference](https://github.com/vinidutraa/qinzora/blob/main/docs/api.md).
+The standard demo runs two independent HTTP processes. The optional continuity scenario also exercises real local model inference when a model is explicitly selected:
 
-## Python integration
-
-The SDK does not require FastAPI. This helper accepts an `Event` with server-verified identity and resource ownership:
-
-```python
-from qinzora.client import QinzoraClient, QinzoraUnavailable
-from qinzora.models import Event
-
-
-def evaluate_access(base_url: str, collector_key: str, event: Event) -> bool:
-    with QinzoraClient(base_url, collector_key) as guard:
-        try:
-            decision = guard.decide(event)
-        except QinzoraUnavailable:
-            raise  # Return unavailability; do not perform the protected operation.
-        return decision["allowed"]
+```text
+qinzora demo --continuity --model qwen3:4b-instruct
 ```
 
-Reuse the client for a web application's lifecycle. A false result must prevent the operation; a true result still requires the application's own authorization. `AsyncQinzoraClient` provides async equivalents. See [SDK and failure handling](https://github.com/vinidutraa/qinzora/blob/main/docs/sdk.md) and the executable [documents example](https://github.com/vinidutraa/qinzora/blob/main/examples/documents_api.py).
+Its checks cover choosing the passing rehearsal, activating its profile, serving a permitted cached read, refusing cached writes, rejecting expired snapshots and invalid currency, and recovering the primary path. The dependency/cache adapters are synthetic. Model inference is real; no scripted replacement is used in this mode. See [reproduction and evidence](https://vinidutraa.github.io/qinzora/continuity/).
+
+## Why Qinzora?
+
+Changing access policies without evidence can disrupt legitimate requests. Qinzora brings observation, historical replay and temporary enforcement into one inspectable workflow. It separates deterministic access decisions from optional AI explanations and policy proposals. It is a backend designed for integration through HTTP/JSON or a Python SDK; no dashboard is required.
+
+## Implemented features
+
+- Candidate policies observe traffic without blocking; active policies expire or can be revoked.
+- Rate limits count attempts by service, route and subject, including denied attempts.
+- Tenant isolation checks trusted identity and resource ownership supplied by the application.
+- Error bursts and latency provide monitoring evidence for completed responses.
+- Historical replay reports affected events and impact by application-provided labels.
+- Scoped manager/collector keys, rotation, account isolation, audit and event export.
+- Synchronous/asynchronous Python clients, CLI, Docker Compose and independent-process HTTP demos.
+- Optional bounded AI administration: typed proposals, explicit authority, fresh replay and transactional execution.
+- Experimental contract-based cached-read continuity; see [status and limits](https://github.com/vinidutraa/qinzora/blob/main/docs/continuity.md).
 
 ## Policy lifecycle
 
@@ -126,6 +97,52 @@ Call `POST /v1/policies/{id}/simulate`, review the snapshot and affected labels,
 | `latency` | Observed latency above a threshold | No, observation only |
 
 Replay evaluates retained metadata, not real operations. It does not discover correct permissions or prove future absence of false positives. [Policy semantics](https://github.com/vinidutraa/qinzora/blob/main/docs/policies.md).
+
+## Python integration
+
+The SDK does not require FastAPI. This helper accepts an `Event` with server-verified identity and resource ownership:
+
+```python
+from qinzora.client import QinzoraClient, QinzoraUnavailable
+from qinzora.models import Event
+
+
+def evaluate_access(base_url: str, collector_key: str, event: Event) -> bool:
+    with QinzoraClient(base_url, collector_key) as guard:
+        try:
+            decision = guard.decide(event)
+        except QinzoraUnavailable:
+            raise  # Return unavailability; do not perform the protected operation.
+        return decision["allowed"]
+```
+
+Reuse the client for a web application's lifecycle. A false result must prevent the operation; a true result still requires the application's own authorization. `AsyncQinzoraClient` provides async equivalents. See [SDK and failure handling](https://github.com/vinidutraa/qinzora/blob/main/docs/sdk.md) and the executable [documents example](https://github.com/vinidutraa/qinzora/blob/main/examples/documents_api.py).
+
+## Architecture
+
+```mermaid
+flowchart LR
+    App[Client application] --> Auth[Authenticate and derive ownership]
+    Auth --> Q[Qinzora policy evaluation]
+    Q --> DB[(Events and audit)]
+    DB --> Replay[Historical simulation]
+    Replay --> Review[Operator or authorized executor]
+    Review --> Active[Temporary active policy]
+    Active --> Q
+    Q --> Decision[Decision and evidence]
+    Decision --> Apply[Application permits or denies operation]
+```
+
+Python 3.12+, FastAPI, Pydantic, HTTPX and SQLite form the runtime. Pytest and Ruff support verification. Qinzora runs separately from the host application; storage currently supports one service instance with serialized transactions.
+
+## Run a persistent service
+
+```text
+qinzora init
+qinzora serve
+```
+
+`init` creates a private `.env` with a random administrator token and database path, refusing to overwrite an existing file. The default address is `http://127.0.0.1:8765`; interactive API reference is at `/docs`, OpenAPI at `/openapi.json`, readiness at `/healthz`. Keep `.env` outside Git. Provision an integration account and retain its manager and collector keys securely; see [API reference](https://github.com/vinidutraa/qinzora/blob/main/docs/api.md).
 
 ## Optional AI
 
@@ -169,6 +186,6 @@ Replay is bounded to 100,000 retained events/account. Client keys have a control
 
 ## Documentation and contribution
 
-[Documentation index](https://github.com/vinidutraa/qinzora/blob/main/docs/index.md) · [Architecture](https://github.com/vinidutraa/qinzora/blob/main/docs/architecture.md) · [CLI](https://github.com/vinidutraa/qinzora/blob/main/docs/cli.md) · [Distribution](https://github.com/vinidutraa/qinzora/blob/main/docs/distribution.md) · [History disclosure](https://github.com/vinidutraa/qinzora/blob/main/docs/history.md) · [Portuguese guides](https://github.com/vinidutraa/qinzora/blob/main/docs/pt-BR/index.md)
+[Documentation index](https://github.com/vinidutraa/qinzora/blob/main/docs/index.md) · [Architecture](https://github.com/vinidutraa/qinzora/blob/main/docs/architecture.md) · [CLI](https://github.com/vinidutraa/qinzora/blob/main/docs/cli.md) · [Distribution](https://github.com/vinidutraa/qinzora/blob/main/docs/distribution.md) · [History disclosure](https://github.com/vinidutraa/qinzora/blob/main/docs/history.md)
 
-The documentation site can be built locally. A configured site URL does not prove public deployment. See [CONTRIBUTING.md](https://github.com/vinidutraa/qinzora/blob/main/CONTRIBUTING.md). Licensed under the [MIT License](https://github.com/vinidutraa/qinzora/blob/main/LICENSE).
+The [documentation site](https://vinidutraa.github.io/qinzora/) is published on GitHub Pages. Build and deployment procedures are documented. See [CONTRIBUTING.md](https://github.com/vinidutraa/qinzora/blob/main/CONTRIBUTING.md). Licensed under the [MIT License](https://github.com/vinidutraa/qinzora/blob/main/LICENSE).

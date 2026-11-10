@@ -1,6 +1,6 @@
 ---
 title: "Policy evaluation"
-description: "Candidates observe matching events without denying access. Routes use exact path-template equality or `*`, not arbitrary patterns. Services and opaque subjects are host-provided identifiers."
+description: "Tenant isolation, attempt windows, retained-event simulation and expiring policy activation."
 ---
 # Policy evaluation
 

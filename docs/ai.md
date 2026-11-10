@@ -1,6 +1,6 @@
 ---
 title: "Optional AI features"
-description: "No model is required for policy evaluation or the standard demonstrations."
+description: "Optional model commentary, typed policy proposals, execution grants and real-model verification."
 ---
 # Optional AI features
 
@@ -42,4 +42,9 @@ python scripts/administration_smoke.py --model INSTALLED_MODEL
 python scripts/administration_smoke.py --model INSTALLED_MODEL --watch
 ```
 
-Abstention/rejected execution is not successful activation. Results depend on provider/model/environment. Successful real-model continuity activation remains unverified; its default planner is explicitly scripted.
+Abstention/rejected execution is not successful activation. Results depend on provider/model/environment. Real local Ollama inference completed the continuity scenario in three recorded post-clarification trials. See [the evidence](validation/continuity-real-model.json). The default demo planner remains explicitly scripted; model commentary may still misinterpret evidence.
+
+
+The independent `continuity_profile_ids` grant permits continuity actions even when `allow_stage` and `allow_enforce` are false; those flags govern policy staging/enforcement only. A candidate profile does not provide live fallback until activated. Rehearsal eligibility describes cached-source evidence, while dependency health describes the primary dependency. The model is told this distinction; the executor continues checking profile IDs, scope, TTL and rehearsal freshness.
+
+The monitor preserves the observation actually sent to the model, including events arriving during inference. Equivalent active policies are not duplicated; eligible candidate/expired policy IDs can be reused with their former configuration audited and replay recalculated. Stopping the monitor cannot undo committed external work. A custom repository must provide account scoping, serialized writes and atomic commit/rollback; the controller does not require an agent framework.

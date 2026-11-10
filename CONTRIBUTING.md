@@ -13,6 +13,6 @@ python -m ruff format --check src tests examples scripts
 python scripts/http_smoke.py
 ```
 
-Add regression coverage for changed behavior. Never weaken safeguards to make a model proposal pass. Document compatibility/migration requirements. English is primary; maintain the Portuguese README and preserve technical Portuguese guides.
+Add regression coverage for changed behavior. Never weaken safeguards to make a model proposal pass. Document compatibility/migration requirements. Use English for documentation, examples, issues, pull requests, release titles and release notes.
 
 See [distribution instructions](docs/distribution.md), [security policy](SECURITY.md) and [code of conduct](CODE_OF_CONDUCT.md). Never commit secrets, databases, private exports or personal drafts. Pull requests should explain purpose, resulting behavior and actual checks.

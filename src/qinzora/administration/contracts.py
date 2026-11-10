@@ -30,7 +30,10 @@ class RevokePolicy(Model):
 
 
 class ActivateContinuity(Model):
-    action: Literal["activate_continuity"]
+    action: Literal["activate_continuity"] = Field(
+        description="Activate a granted fallback profile after a fresh passing rehearsal. "
+        "This separate continuity action does not require the policy allow_enforce grant."
+    )
     profile_id: str = Field(min_length=1, max_length=100)
 
 
@@ -59,8 +62,8 @@ class Authority(Model):
         min_length=1,
         max_length=1000,
     )
-    allow_stage: bool = True
-    allow_enforce: bool = False
+    allow_stage: bool = Field(default=True, description="Grant stage_policy only.")
+    allow_enforce: bool = Field(default=False, description="Grant enforce_policy only.")
     revocable_policy_ids: list[str] = Field(default_factory=list, max_length=100)
     maximum_ttl_seconds: int = Field(default=300, ge=1, le=86400)
     minimum_rate_limit: int = Field(default=10, ge=1, le=100000)
@@ -70,7 +73,12 @@ class Authority(Model):
     maximum_unknown_affected: int = Field(default=0, ge=0, le=100000)
     maximum_false_positive_rate: float = Field(default=0, ge=0, le=1, allow_inf_nan=False)
     plan_ttl_seconds: int = Field(default=300, ge=1, le=900)
-    continuity_profile_ids: list[str] = Field(default_factory=list, max_length=10)
+    continuity_profile_ids: list[str] = Field(
+        default_factory=list,
+        max_length=10,
+        description="Profiles granted for activate_continuity/revoke_continuity, independently "
+        "of policy grants. The executor still requires scope, freshness and rehearsal checks.",
+    )
     maximum_continuity_evidence_age_seconds: int = Field(default=900, ge=1, le=86400)
 
     def permits(self, policy: Policy) -> bool:

@@ -1,6 +1,6 @@
 ---
 title: "Python SDK"
-description: "`qinzora.client` exports `QinzoraClient`, `AsyncQinzoraClient` and `QinzoraUnavailable`. Both provide `observe(event)` and `decide(event)`. Keep a client for the application lifecycle and close it on "
+description: "Integrate synchronous or asynchronous Python clients with explicit decisions and failure handling."
 ---
 # Python SDK
 

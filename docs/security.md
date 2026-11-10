@@ -1,6 +1,6 @@
 ---
 title: "Security considerations"
-description: "The host authenticates users, derives ownership from trusted server state, retains authorization, applies denied decisions and handles service failure. Browser tenant headers do not establish identity"
+description: "Credentials, trusted application context, failure behavior and operational limitations."
 ---
 # Security considerations
 

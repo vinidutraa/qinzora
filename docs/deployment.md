@@ -1,6 +1,6 @@
 ---
 title: "Docker deployment and operations"
-description: "After installation, run `qinzora init` and keep `.env` private. With Docker Engine and Compose:"
+description: "Run one Qinzora instance with Docker Compose, persistent SQLite, backups and explicit access controls."
 ---
 # Docker deployment and operations
 

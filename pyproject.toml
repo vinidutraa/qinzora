@@ -24,7 +24,7 @@ dependencies = ["pydantic>=2.10,<3", "fastapi>=0.115,<1", "uvicorn>=0.34,<1", "h
 
 [project.urls]
 Repository = "https://github.com/vinidutraa/qinzora"
-Documentation = "https://github.com/vinidutraa/qinzora/blob/main/docs/index.md"
+Documentation = "https://vinidutraa.github.io/qinzora/"
 Issues = "https://github.com/vinidutraa/qinzora/issues"
 Changelog = "https://github.com/vinidutraa/qinzora/blob/main/docs/history.md"
 
@@ -38,7 +38,7 @@ qinzora = "qinzora.cli:main"
 packages = ["src/qinzora"]
 
 [tool.hatch.build.targets.sdist]
-include = ["/src", "/tests", "/examples", "/scripts", "/docs", "/publishing", "/.github", "/README.md", "/README.pt-BR.md", "/LICENSE", "/CONTRIBUTING.md", "/SECURITY.md", "/CODE_OF_CONDUCT.md", "/pyproject.toml", "/requirements*.txt", "/Dockerfile", "/compose.yaml", "/mkdocs.yml"]
+include = ["/src", "/tests", "/examples", "/scripts", "/docs", "/publishing", "/.github", "/README.md", "/LICENSE", "/CONTRIBUTING.md", "/SECURITY.md", "/CODE_OF_CONDUCT.md", "/pyproject.toml", "/requirements*.txt", "/Dockerfile", "/compose.yaml", "/mkdocs.yml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

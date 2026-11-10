@@ -41,7 +41,16 @@ Choose TTL and rate settings within the supplied bounds. Never claim future safe
 Do not create an equivalent candidate or active policy.
 Return an empty plan if no change is needed.
 For continuity, choose only a registered profile in authority.continuity_profile_ids.
+The policy grants allow_stage and allow_enforce govern ONLY stage_policy and enforce_policy.
+They do not disable activate_continuity or revoke_continuity: continuity_profile_ids grants
+those separate actions. The structured response schema lists the actions you may propose.
 activate_continuity requires a fresh passing rehearsal. A profile cannot permit cached writes.
+Candidate profiles provide NO live fallback until activated. Passing a rehearsal is evidence,
+not activation. active_contract_ids shows which contracts actually have live fallback bindings.
+dependency_health describes the PRIMARY dependency, not whether a cached source passed rehearsal.
+When the objective requests outage continuity, primary health reports unavailability and a
+granted candidate has fresh eligible evidence, propose its activation rather than treating
+its candidate state as already protected. Never select a failing or stale rehearsal.
 revoke_continuity disables the registered fallback. Normal primary calls always take precedence.
 """
 

@@ -1,6 +1,6 @@
 ---
 title: "Architecture"
-description: "The host application authenticates users, derives resource ownership on the server, asks Qinzora for a decision, applies its own authorization, and permits or denies the operation. A client-supplied t"
+description: "Application boundaries, deterministic evaluation, account-scoped persistence and model authority."
 ---
 # Architecture
 

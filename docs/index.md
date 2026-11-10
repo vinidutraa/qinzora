@@ -1,6 +1,6 @@
 ---
 title: Qinzora — API policy evaluation and historical simulation
-description: An open-source Python backend for API policies, tenant isolation, rate limiting and historical simulation.
+description: "API policy evaluation, retained-event replay and temporary enforcement in Python."
 ---
 # Inspect a policy before enforcing it
 
@@ -28,4 +28,4 @@ This Python API policy enforcement engine complements application authentication
 - [Contributing](contributing.md)
 - [History disclosure](history.md)
 
-[GitHub](https://github.com/vinidutraa/qinzora) · [Português brasileiro](pt-BR/index.md)
+[GitHub](https://github.com/vinidutraa/qinzora) · [Installation](getting-started.md)

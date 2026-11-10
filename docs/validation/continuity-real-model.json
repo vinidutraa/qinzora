@@ -1,0 +1,156 @@
+{
+  "recorded_at": "2026-11-10T09:06:46.977727+00:00",
+  "python": "3.14.7",
+  "platform": "Windows",
+  "model": "qwen3:4b-instruct",
+  "model_digest": "0edcdef34593eac1aa2be9c7d06c432dcf81945adca5eca2f27662c18f168ba0",
+  "duration_seconds": 58.306,
+  "passed": true,
+  "trials": [
+    {
+      "passed": true,
+      "steps": [
+        {
+          "step": "compare_rehearsals",
+          "passed": true
+        },
+        {
+          "step": "activate_registered_profile",
+          "passed": true
+        },
+        {
+          "step": "read_fallback",
+          "passed": true
+        },
+        {
+          "step": "checkout_no_cached_write",
+          "passed": true
+        },
+        {
+          "step": "reject_expired_live_snapshot",
+          "passed": true
+        },
+        {
+          "step": "reject_wrong_currency",
+          "passed": true
+        },
+        {
+          "step": "primary_recovery",
+          "passed": true
+        }
+      ],
+      "inference": "real Ollama",
+      "model": "qwen3:4b-instruct",
+      "actions": [
+        {
+          "action": "activate_continuity",
+          "profile_id": "f4c2c8ca-dfdf-4ae0-a5ca-e65f620811b3"
+        }
+      ],
+      "rationale": "The objective is to maintain shipping estimates during outages, with strict requirements to prevent cached checkout writes and incorrect currency. The profile 'local estimates' (ID: f4c2c8ca-dfdf-4ae0-a5ca-e65f620811b3) has a fresh, passing rehearsal (eligible: true, failed_cases: 0), and its dependency health shows no failure for the contracts it serves. In contrast, the 'stale backup' profile has a failing dependency and no passing rehearsal. The 'local estimates' profile meets all criteria for continuity activation: it is eligible, has valid contract bindings, and satisfies the required constraints (currency: BRL, required fields). Given that the primary dependency is unavailable and the 'local estimates' profile is the only one with a valid, fresh rehearsal, it is the only safe and compliant fallback. Activation of this profile ensures continuity without violating tenant isolation or introducing cached writes or incorrect data. The 'allow_stage' and 'allow_enforce' grants are not required for activation, as this action is governed by the continuity profile activation policy.",
+      "transport": "real loopback HTTP management; synthetic primary/cache adapters",
+      "limitation": "Synthetic example; no guarantee of model accuracy or resilience."
+    },
+    {
+      "passed": true,
+      "steps": [
+        {
+          "step": "compare_rehearsals",
+          "passed": true
+        },
+        {
+          "step": "activate_registered_profile",
+          "passed": true
+        },
+        {
+          "step": "read_fallback",
+          "passed": true
+        },
+        {
+          "step": "checkout_no_cached_write",
+          "passed": true
+        },
+        {
+          "step": "reject_expired_live_snapshot",
+          "passed": true
+        },
+        {
+          "step": "reject_wrong_currency",
+          "passed": true
+        },
+        {
+          "step": "primary_recovery",
+          "passed": true
+        }
+      ],
+      "inference": "real Ollama",
+      "model": "qwen3:4b-instruct",
+      "actions": [
+        {
+          "action": "activate_continuity",
+          "profile_id": "f5ea80db-15ab-4113-a8be-5765e0e0aa45"
+        }
+      ],
+      "rationale": "The objective is to maintain shipping estimates during outages, with strict requirements to prevent cached checkout writes and incorrect currency. The profile 'local estimates' (ID: f5ea80db-15ab-4113-a8be-5765e0e0aa45) has a fresh passing rehearsal (eligible: true, failed_cases: 0), while the 'stale backup' profile is unavailable and has a failure history. The dependency health shows the primary service is unavailable for both contracts, but only the 'local estimates' profile passes the rehearsal. Given that the 'local estimates' profile meets all criteria\u2014fresh evidence, valid contracts, correct value rules, and no cached writes\u2014and is eligible for activation, it is the only valid candidate to activate. Activation ensures continuity without violating tenant isolation or introducing cached writes or incorrect currency. The 'stale backup' profile is not activated due to its unavailability and failure history. The policy does not allow enforcement, so activation is based solely on rehearsal evidence and continuity profile eligibility.",
+      "transport": "real loopback HTTP management; synthetic primary/cache adapters",
+      "limitation": "Synthetic example; no guarantee of model accuracy or resilience."
+    },
+    {
+      "passed": true,
+      "steps": [
+        {
+          "step": "compare_rehearsals",
+          "passed": true
+        },
+        {
+          "step": "activate_registered_profile",
+          "passed": true
+        },
+        {
+          "step": "read_fallback",
+          "passed": true
+        },
+        {
+          "step": "checkout_no_cached_write",
+          "passed": true
+        },
+        {
+          "step": "reject_expired_live_snapshot",
+          "passed": true
+        },
+        {
+          "step": "reject_wrong_currency",
+          "passed": true
+        },
+        {
+          "step": "primary_recovery",
+          "passed": true
+        }
+      ],
+      "inference": "real Ollama",
+      "model": "qwen3:4b-instruct",
+      "actions": [
+        {
+          "action": "activate_continuity",
+          "profile_id": "99c15ec5-1e23-4f9d-b56e-8e0f47340df3"
+        }
+      ],
+      "rationale": "The objective is to maintain shipping estimates during outages while ensuring no cached checkout writes or incorrect currency values are served. The profile 'local estimates' (ID: 99c15ec5-1e23-4f9d-b56e-8e0f47340df3) has a fresh passing rehearsal (eligible: true, failed_cases: 0), valid dependency health (no failures reported), and meets all required constraints including currency validation and write restrictions. In contrast, the 'stale backup' profile has a failed rehearsal (failed_cases: 1) and is unavailable. Only a fresh, passing profile with valid evidence should be activated to ensure continuity without compromising data integrity or service correctness. Therefore, activation of 'local estimates' is justified and aligned with the authority's objective and constraints.",
+      "transport": "real loopback HTTP management; synthetic primary/cache adapters",
+      "limitation": "Synthetic example; no guarantee of model accuracy or resilience."
+    }
+  ],
+  "scope": "Real local inference and loopback HTTP; synthetic shipping/cache adapters. This is a bounded demonstration, not a production reliability guarantee.",
+  "comparison": {
+    "before_clarification": {
+      "trials": 3,
+      "completed": 1,
+      "abstentions": 2
+    },
+    "after_clarification": {
+      "trials": 3,
+      "completed": 3,
+      "abstentions": 0
+    }
+  }
+}

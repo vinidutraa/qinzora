@@ -25,7 +25,7 @@ theme:
     - content.code.copy
 plugins:
   - search:
-      lang: [en, pt]
+      lang: [en]
 markdown_extensions:
   - admonition
   - pymdownx.superfences:
@@ -33,13 +33,6 @@ markdown_extensions:
         - name: mermaid
           class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
-exclude_docs: |
-  /ARQUITETURA.md
-  /INTEGRACAO.md
-  /OPERACAO.md
-  /VALIDACAO.md
-  /ADMINISTRACAO.md
-  /HISTORICO.md
 nav:
   - Overview: index.md
   - Getting started: getting-started.md
@@ -59,12 +52,3 @@ nav:
   - Distribution: distribution.md
   - Contributing: contributing.md
   - History disclosure: history.md
-  - Português:
-      - Início: pt-BR/index.md
-      - Arquitetura: pt-BR/ARQUITETURA.md
-      - Integração: pt-BR/INTEGRACAO.md
-      - Operação: pt-BR/OPERACAO.md
-      - Administração por IA: pt-BR/ADMINISTRACAO.md
-      - Validação: pt-BR/VALIDACAO.md
-      - Histórico: pt-BR/HISTORICO.md
-      - Contribuição: pt-BR/CONTRIBUTING.md

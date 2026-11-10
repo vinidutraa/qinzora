@@ -1,6 +1,6 @@
 ---
 title: "Troubleshooting"
-description: "The demo uses temporary storage, not your normal database. Report bugs with synthetic reproductions, installed version, Python/OS and redacted output. "
+description: "Diagnose configuration, authorization, simulation, provider and installation failures."
 ---
 # Troubleshooting
 

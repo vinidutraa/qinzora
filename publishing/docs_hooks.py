@@ -1,12 +1,9 @@
-"""Keep the preserved Portuguese guides correctly identified to assistive tools."""
+"""Give the documentation theme native keyboard-accessible header controls."""
 
 import re
 
 
 def on_post_page(output, page, config):
-    if page.file.src_uri.startswith("pt-BR/"):
-        output = output.replace('<html lang="en"', '<html lang="pt-BR"', 1)
-
     def button(match):
         target, icon = match.groups()
         name = "Toggle navigation" if target == "__drawer" else "Toggle search"
